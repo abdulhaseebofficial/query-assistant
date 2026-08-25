@@ -54,11 +54,14 @@
 
                 {% if result.is_aggregate and result.rows %}
                     {% set stat = result.rows[0] %}
+                    {# The column the engine chose, not a hardcoded name: an aggregate
+                       here can be a count, a sum, or an average. #}
+                    {% set stat_key = result.columns[0] %}
                     <div class="stat-card">
                         <span class="stat-value">
-                            {% if stat['count'] is none %}0{% else %}{{ stat['count']|commas }}{% endif %}
+                            {% if stat[stat_key] is none %}0{% else %}{{ stat[stat_key]|commas }}{% endif %}
                         </span>
-                        <span class="stat-label">matching rows</span>
+                        <span class="stat-label">{{ stat_key }}</span>
                     </div>
                 {% elif result.rows %}
                     <div class="result-toolbar">

@@ -18,7 +18,7 @@ import psycopg2.extras
 
 from backend.config import POSTGRES_CONFIG_PATH as CONFIG_PATH
 from backend.config import UPLOAD_DIR
-from backend.connectors import quote_ident
+from backend.db import quote_ident
 
 # Connecting to a private address is normal when you run Postgres on your own
 # machine, and a server-side request forgery primitive when the app is reachable

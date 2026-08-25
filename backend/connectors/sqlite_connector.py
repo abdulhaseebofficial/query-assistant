@@ -7,7 +7,7 @@ import os
 import sqlite3
 
 from backend.config import CONNECTED_DB_PATH, UPLOAD_DIR
-from backend.connectors import quote_ident
+from backend.db import quote_ident
 
 SQLITE_MAGIC = b"SQLite format 3\x00"
 SYSTEM_TABLES = {"sqlite_sequence", "sqlite_stat1", "custom_data", "custom_meta"}

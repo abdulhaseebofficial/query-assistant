@@ -6,7 +6,9 @@ unavailable.
 import csv
 import io
 import re
+from functools import cache
 
+from backend.db import quote_ident
 from backend.engines.phrases import (
     ALL_PHRASES,
     AVG_PHRASES,
@@ -19,13 +21,21 @@ from backend.engines.phrases import (
 )
 
 
-def any_phrase(text, phrases):
-    """True when any phrase appears as a whole word (or run of words) in `text`.
+@cache
+def _phrase_group_pattern(phrases):
+    """One compiled alternation for a group of phrases.
 
-    Word boundaries matter: "min" must not match inside "administration", and
-    "max" must not match inside "maximum_capacity".
+    The groups are module constants asked the same question on every request, so
+    compiling one pattern per phrase per call meant re-escaping the same strings
+    thousands of times. Word boundaries matter: "min" must not match inside
+    "administration", and "max" must not match inside "maximum_capacity".
     """
-    return any(re.search(r"\b" + re.escape(phrase) + r"\b", text) for phrase in phrases)
+    return re.compile(r"\b(?:" + "|".join(re.escape(p) for p in phrases) + r")\b")
+
+
+def any_phrase(text, phrases):
+    """True when any phrase appears as a whole word (or run of words) in `text`."""
+    return _phrase_group_pattern(tuple(phrases)).search(text) is not None
 
 
 MAX_ROWS = 5000
@@ -275,13 +285,15 @@ def build_custom_query(user_input, columns, table_name="custom_data", placeholde
     if any_phrase(text, OVERVIEW_PHRASES):
         keywords = []
 
-    table_sql = f'"{table_name}"'
-    cols_sql = ", ".join(f'"{c}"' for c in columns)
+    table_sql = quote_ident(table_name)
+    cols_sql = ", ".join(quote_ident(c) for c in columns)
 
     conditions = []
     params = []
     for keyword in keywords:
-        col_conditions = " OR ".join(f'CAST("{c}" AS TEXT) LIKE {placeholder}' for c in columns)
+        col_conditions = " OR ".join(
+            f"CAST({quote_ident(c)} AS TEXT) LIKE {placeholder}" for c in columns
+        )
         conditions.append(f"({col_conditions})")
         params.extend([f"%{keyword}%"] * len(columns))
     where_clause = f" WHERE {' AND '.join(conditions)}" if conditions else ""
@@ -296,26 +308,32 @@ def build_custom_query(user_input, columns, table_name="custom_data", placeholde
         limit = 1 if any_phrase(text, SINGLE_ROW_PHRASES) else 5
         row_word = "row" if limit == 1 else f"{limit} rows"
         if any_phrase(text, HIGHEST_PHRASES):
-            sql = f'SELECT {cols_sql} FROM {table_sql}{where_clause} ORDER BY "{numeric}" DESC LIMIT {limit};'
+            sql = (
+                f"SELECT {cols_sql} FROM {table_sql}{where_clause} "
+                f"ORDER BY {quote_ident(numeric)} DESC LIMIT {limit};"
+            )
             return sql, params, f"The {row_word} with the highest {label}.", False
         if any_phrase(text, LOWEST_PHRASES):
-            sql = f'SELECT {cols_sql} FROM {table_sql}{where_clause} ORDER BY "{numeric}" ASC LIMIT {limit};'
+            sql = (
+                f"SELECT {cols_sql} FROM {table_sql}{where_clause} "
+                f"ORDER BY {quote_ident(numeric)} ASC LIMIT {limit};"
+            )
             return sql, params, f"The {row_word} with the lowest {label}.", False
 
     # An aggregate over a named numeric column: "total revenue", "average price".
     if numeric:
         if any_phrase(text, AVG_PHRASES):
-            sql = f'SELECT AVG("{numeric}") AS average FROM {table_sql}{where_clause};'
+            sql = f"SELECT AVG({quote_ident(numeric)}) AS average FROM {table_sql}{where_clause};"
             return sql, params, f"Calculates the average {label}.", True
         if any_phrase(text, SUM_PHRASES):
-            sql = f'SELECT SUM("{numeric}") AS total FROM {table_sql}{where_clause};'
+            sql = f"SELECT SUM({quote_ident(numeric)}) AS total FROM {table_sql}{where_clause};"
             return sql, params, f"Adds up the total {label}.", True
 
     if any_phrase(text, COUNT_PHRASES):
         # "revenue kitna hai" asks how *much*, not how many — the same distinction
         # rule_engine draws, and it turns on whether the question named an amount.
         if numeric:
-            sql = f'SELECT SUM("{numeric}") AS total FROM {table_sql}{where_clause};'
+            sql = f"SELECT SUM({quote_ident(numeric)}) AS total FROM {table_sql}{where_clause};"
             return sql, params, f"Adds up the total {label}.", True
 
         sql = f"SELECT COUNT(*) AS count FROM {table_sql}{where_clause};"

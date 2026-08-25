@@ -15,3 +15,9 @@ Only one external connection can be active at a time. Connecting a new one autom
 
 - Both files offer the same set of functions — `is_connected()`, `list_tables()`, `get_table()`, `get_connection()`, `clear_connection()` — so the rest of the app (`backend/app.py`) can use either one without needing to know which database type it's actually talking to.
 - The PostgreSQL connection string is stored as plain text on disk. That's fine for personal or local use, but it's not something you'd want to do for a shared, production database — see the "Known limitations" section in the project's main [README.md](../../README.md) for more on this.
+
+## A note on table and column names
+
+Both connectors read names out of the connected database's own catalogue and interpolate them into SQL, because names can't be bound as parameters the way values can. A name is not safe just because the database reported it — the database itself is one a visitor attached. Both go through `quote_ident` in `backend/db.py`, which doubles any quote inside a name so it can't close the quoting early.
+
+Uploaded CSVs don't have this problem: their headers get sanitised into plain `snake_case` on the way in. A connected database's don't, which is why a column named with a quote in it used to crash every question asked of that table.

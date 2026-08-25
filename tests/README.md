@@ -1,6 +1,6 @@
 # tests/
 
-The automated checks that run on every push and pull request. 420 tests, about nine seconds,
+The automated checks that run on every push and pull request. 476 tests, about fourteen seconds,
 no network access and no API key required.
 
 ```bash
@@ -55,6 +55,16 @@ routes every path to the one function, that `DATA_DIR` moves every written path 
 writable, and that importing `api/index.py` into an empty directory seeds the database and
 serves a real answer. The cold-start tests run in a subprocess because `config.py` reads
 the environment once at import.
+
+**`test_connected_database.py`** — questions asked against a database someone attached
+at runtime. This path had no tests at all, and it shares its query builder with the CSV
+path while reaching it through different routes and a different template — which is
+exactly how it broke: the builder learned to total and average a column, and
+`connect_table.html` was still reading the answer out of a hardcoded `count` key, so the
+explanation said "Adds up the total revenue" with nothing underneath it. Also covers what a
+connected database can carry that an upload can't: column names with quotes, spaces,
+reserved words and non-Latin script, since a CSV's headers are sanitised on the way in and
+a connected database's are not.
 
 **`test_csv_questions.py`** — the same questions, asked about an uploaded spreadsheet
 instead of the demo schema. csv_engine knows only the column names and their types, and it
