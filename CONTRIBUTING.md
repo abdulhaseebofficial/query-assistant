@@ -17,13 +17,14 @@ python run.py
 The app comes up at <http://127.0.0.1:5000> and seeds `data/company.db` on first run, so
 there is nothing else to install or configure.
 
-`ANTHROPIC_API_KEY` is optional. Without it the app uses its rule-based engines, which is
-also how CI runs — so a contribution never requires an API key.
+AI keys are optional. Without `GEMINI_API_KEY` or `ANTHROPIC_API_KEY` the app uses its
+rule-based engines, which is also how CI runs — so a contribution never requires an API
+key, and the test suite clears those variables anyway so it can't make a live call.
 
 ## Before you open a pull request
 
 ```bash
-pytest          # 82 tests, ~2 seconds, no network needed
+pytest          # 102 tests, ~2 seconds, no network needed
 ruff check .    # lint
 ```
 

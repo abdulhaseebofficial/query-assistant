@@ -11,7 +11,7 @@ database, a CSV you upload, or your own SQLite / PostgreSQL database.
 [![CI](https://github.com/abdulhaseebofficial/query-assistant/actions/workflows/ci.yml/badge.svg)](https://github.com/abdulhaseebofficial/query-assistant/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/Flask-3.0-000000?logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
-[![Tests](https://img.shields.io/badge/tests-82%20passing-3fb950)](tests/)
+[![Tests](https://img.shields.io/badge/tests-102%20passing-3fb950)](tests/)
 [![Ruff](https://img.shields.io/badge/lint-ruff-261230?logo=ruff&logoColor=white)](https://docs.astral.sh/ruff/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
@@ -39,7 +39,7 @@ actually had.
 | **Plain-English questions** | *"employees in the IT department"*, *"products low on stock"*, *"total revenue this month"* |
 | **Roman Urdu too** | *"kitne employees hain"* works as well as *"how many employees"* |
 | **Shows its work** | Every answer comes with the generated SQL, syntax-highlighted and copyable |
-| **Two engines** | Claude writes the SQL when an API key is set; a rule-based engine handles it when there isn't one — so the app never hard-fails |
+| **Bring your own model** | Google Gemini or Anthropic Claude writes the SQL — set whichever key you have, or neither, and a rule-based engine takes over so the app never hard-fails |
 | **Your own data** | Upload a CSV, connect a SQLite file, or paste a PostgreSQL / Supabase connection string |
 | **Tables and charts** | Results render as a table, and as a bar / line / pie chart when the shape of the data suits one |
 | **CSV export** | Download any result set |
@@ -65,9 +65,10 @@ python run.py
 Open <http://127.0.0.1:5000>. The demo database seeds itself on first run — there is no
 migration step and no external service to install.
 
-**No API key needed.** Without `ANTHROPIC_API_KEY` the app runs on its rule-based engine
-and every feature still works. Add a key when you want the AI engine to handle questions
-the rules don't cover.
+**No API key needed.** With no key at all the app runs on its rule-based engine and every
+feature still works. Add a `GEMINI_API_KEY` or an `ANTHROPIC_API_KEY` to `.env` when you
+want a model handling the questions the rules don't cover — the app picks up whichever one
+it finds.
 
 ## How a question becomes an answer
 
@@ -75,7 +76,7 @@ the rules don't cover.
 flowchart LR
     Q["Your question<br/><i>highest paid employees</i>"] --> R{"Which data<br/>source is active?"}
 
-    R -->|Demo database| A["AI engine<br/>Claude"]
+    R -->|Demo database| A["AI engine<br/>Gemini or Claude"]
     R -->|Uploaded CSV| A
     R -->|Connected DB| A
 
@@ -146,7 +147,7 @@ query-assistant/
 │   ├── database.py              # Demo schema + seed data
 │   ├── auth.py                  # Accounts, login, query history
 │   ├── engines/                 # Question → SQL — engines/README.md
-│   │   ├── ai_engine.py            # Claude-powered generation + the SQL validator
+│   │   ├── ai_engine.py            # Gemini / Claude generation + the SQL validator
 │   │   ├── rule_engine.py          # Rule-based fallback for the demo schema
 │   │   └── csv_engine.py           # Query builder for uploaded CSVs
 │   ├── connectors/              # External data sources — connectors/README.md
@@ -159,7 +160,7 @@ query-assistant/
 │   ├── templates/               # Jinja2 templates (+ partials/)
 │   └── static/css/              # Stylesheets
 │
-├── tests/                    # 82 tests, ~2s, no network — tests/README.md
+├── tests/                    # 102 tests, ~2s, no network — tests/README.md
 ├── data/                     # Runtime data, git-ignored — data/README.md
 ├── docs/screenshots/         # Images used by this README
 ├── run.py                    # Entry point
@@ -174,7 +175,10 @@ and fill in what you need.
 | Variable | Default | What it does |
 |---|---|---|
 | `SECRET_KEY` | random per process | Signs session cookies. Leave it unset locally and logins simply won't survive a restart; **set it in production**. |
-| `ANTHROPIC_API_KEY` | unset | Enables Claude-powered SQL generation. Without it, the rule-based engine handles everything. |
+| `GEMINI_API_KEY` | unset | Enables Gemini-powered SQL generation. `GOOGLE_API_KEY` works as an alias. |
+| `ANTHROPIC_API_KEY` | unset | Enables Claude-powered SQL generation. With no AI key at all, the rule-based engine handles everything. |
+| `AI_PROVIDER` | auto | `gemini` or `anthropic`. Leave blank to pick automatically (Gemini first); set it to pin one provider while both keys stay in `.env`. |
+| `GEMINI_MODEL` / `ANTHROPIC_MODEL` | `gemini-2.5-flash` / `claude-opus-5` | Move to a newer model without touching the code. |
 | `FLASK_DEBUG` | `false` | Auto-reload and interactive tracebacks. **Never `true` in production** — Flask's debugger allows arbitrary code execution if it is reachable. |
 | `SESSION_COOKIE_SECURE` | `false` | Set to `true` once you are serving over HTTPS, so cookies are marked `Secure`. Defaults off so local `http://` development works. |
 
@@ -183,7 +187,7 @@ and fill in what you need.
 ```bash
 pip install -r requirements.txt -r requirements-dev.txt
 
-pytest              # 82 tests, about two seconds
+pytest              # 102 tests, about two seconds
 ruff check .        # lint
 ```
 

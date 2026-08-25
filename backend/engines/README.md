@@ -8,10 +8,24 @@ There are three engines, and they're tried in order until one of them can answer
 
 | File | What it does |
 |---|---|
-| `ai_engine.py` | Tried **first**. Sends the question to Claude (Anthropic's AI) and asks it to write the SQL. Only works if an `ANTHROPIC_API_KEY` is set up — otherwise it's skipped automatically. Before running anything the AI writes, it double-checks the SQL is safe: it must be a single read-only `SELECT`, and it's only allowed to look at specific tables (so it can never peek at things like saved passwords). |
+| `ai_engine.py` | Tried **first**. Sends the question to an AI model and asks it to write the SQL. It can use either **Google Gemini** (`GEMINI_API_KEY`) or **Anthropic Claude** (`ANTHROPIC_API_KEY`) — whichever key you've set up. If neither is set, this engine is skipped automatically. Before running anything the AI writes, it double-checks the SQL is safe: it must be a single read-only `SELECT`, and it's only allowed to look at specific tables (so it can never peek at things like saved passwords). |
 | `rule_engine.py` | Used for the **built-in demo database** (departments, employees, products, customers, orders) when the AI engine isn't available. It works by looking for keywords in the question — like "employees", "highest paid", or "kitne" (Urdu for "how many") — and building the matching SQL query from a fixed template. |
 | `csv_engine.py` | Handles CSV files that a user uploads. It reads the file, figures out each column's data type, saves it as a table, and — like `rule_engine.py` — can build a simple keyword-search query if the AI engine isn't available. |
 
 ## Why two ways of answering the same question?
 
 The AI engine is smarter and more flexible, but it needs an internet connection and an API key. The rule-based engines (`rule_engine.py` and `csv_engine.py`) are simpler and less flexible, but they always work, don't cost anything, and don't depend on any outside service. This means the app still works even if the AI is turned off.
+
+## Choosing between Gemini and Claude
+
+You don't have to choose — set whichever key you have and the app works it out:
+
+| What you set in `.env` | What runs |
+|---|---|
+| `GEMINI_API_KEY` | Gemini |
+| `ANTHROPIC_API_KEY` | Claude |
+| Both | Gemini (it's the default when there's a tie) |
+| Both, plus `AI_PROVIDER=anthropic` | Claude — `AI_PROVIDER` always wins |
+| Neither | The rule-based engines |
+
+The safety check described above is the **same code for both providers**. Whichever model writes the query, it goes through one validator before anything is allowed to run — a provider is never trusted to have followed instructions.

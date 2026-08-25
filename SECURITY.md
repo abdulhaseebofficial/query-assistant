@@ -25,7 +25,7 @@ a report.
 | Concern | How it's handled | Where |
 |---|---|---|
 | SQL injection via user questions | Every engine returns `(sql, params)`; values are always bound parameters, never concatenated | `backend/engines/`, `tests/test_rule_engine.py` |
-| Model-generated SQL doing damage | `_validate_select()` allows a single read-only `SELECT` only — no stacked statements, no `INSERT`/`UPDATE`/`DELETE`/`DROP`/`ATTACH`/`PRAGMA` | `backend/engines/ai_engine.py`, `tests/test_sql_guardrails.py` |
+| Model-generated SQL doing damage | `_validate_select()` allows a single read-only `SELECT` only — no stacked statements, no `INSERT`/`UPDATE`/`DELETE`/`DROP`/`ATTACH`/`PRAGMA`. It runs on the output of **every** provider, so swapping models can't route around it | `backend/engines/ai_engine.py`, `tests/test_sql_guardrails.py` |
 | Generated SQL reaching the `users` table | A table whitelist; the demo tables and the app's own auth tables share one SQLite file, so the whitelist is the boundary | `backend/engines/ai_engine.py` |
 | CSRF | `CSRFProtect` on every state-changing request | `backend/app.py` |
 | Session cookie forgery | `SECRET_KEY` from the environment; a random per-process key if unset, never a hardcoded default | `backend/app.py` |
@@ -50,5 +50,12 @@ Be aware of these before deploying this anywhere public:
   any PostgreSQL connection you set up.
 - **`SESSION_COOKIE_SECURE` defaults to `false`** so local `http://` development works.
   Set it to `true` once you're serving over HTTPS.
+- **Your AI provider sees your schema and your questions.** When `GEMINI_API_KEY` or
+  `ANTHROPIC_API_KEY` is set, the table/column names of the active data source and the
+  text you type are sent to that provider. Row data is never sent — the model writes the
+  query, the app runs it locally — but treat schema names as disclosed. Leave both keys
+  unset to keep everything on your machine.
+- **API keys live in `.env`,** which is git-ignored but unencrypted. Rotate a key
+  immediately if it's ever pasted into a chat, a screenshot, or a commit.
 - **There is no multi-tenancy.** An uploaded CSV replaces the previous one for everyone
   using that instance. This is built as a single-user / demo app.

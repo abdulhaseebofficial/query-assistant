@@ -74,12 +74,8 @@ def test_a_select_referencing_no_table_at_all_is_rejected():
     assert validate("SELECT 1") is None
 
 
-def test_generate_sql_returns_none_without_an_api_key(monkeypatch):
+def test_generate_sql_returns_none_without_an_api_key(no_ai_keys):
     """No key configured means the caller must fall back to the rule engine."""
     import backend.engines.ai_engine as ai_engine
-
-    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
-    monkeypatch.setattr(ai_engine, "_client", None)
-    monkeypatch.setattr(ai_engine, "_client_checked", False)
 
     assert ai_engine.generate_sql("employees in IT", ai_engine.BUILTIN_SCHEMA) is None

@@ -1,9 +1,16 @@
 """Shared pytest fixtures.
 
-The suite runs against a throwaway SQLite file in a temp directory rather than
-the developer's real data/company.db, so running the tests never adds test
-users or clobbers an uploaded dataset. `DB_NAME` is imported by value into
-backend.app and backend.auth, so all three modules have to be repointed.
+Two things are isolated here so the suite is deterministic and free to run:
+
+1. The database. Tests use a throwaway SQLite file in a temp directory rather than
+   the developer's real data/company.db, so running them never adds test users or
+   clobbers an uploaded dataset. `DB_NAME` is imported by value into backend.app
+   and backend.auth, so all three modules have to be repointed.
+
+2. The AI providers. ai_engine calls load_dotenv() at import, so a developer with a
+   real key in .env would otherwise have the suite firing off live API requests —
+   slow, billable, and non-deterministic. Every test runs with those keys cleared,
+   which also means the assertions exercise the rule-based fallback path.
 """
 
 import os
@@ -14,6 +21,25 @@ import tempfile
 import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+AI_ENV_VARS = ("GEMINI_API_KEY", "GOOGLE_API_KEY", "ANTHROPIC_API_KEY", "AI_PROVIDER")
+
+
+@pytest.fixture(autouse=True)
+def no_ai_keys(monkeypatch):
+    """Run every test as if no AI provider were configured.
+
+    Requested by name in tests that are specifically about the no-key path; applied
+    everywhere else automatically so nothing in the suite can reach a live API.
+    """
+    import backend.engines.ai_engine as ai_engine
+
+    for var in AI_ENV_VARS:
+        monkeypatch.delenv(var, raising=False)
+
+    ai_engine.reset_client_cache()
+    yield
+    ai_engine.reset_client_cache()
 
 
 @pytest.fixture(scope="session", autouse=True)

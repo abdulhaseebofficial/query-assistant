@@ -1,6 +1,6 @@
 # tests/
 
-The automated checks that run on every push and pull request. 82 tests, about two seconds,
+The automated checks that run on every push and pull request. 102 tests, about two seconds,
 no network access and no API key required.
 
 ```bash
@@ -18,7 +18,7 @@ tests will never add junk users to your dev database or wipe a dataset you uploa
 modules have to be repointed — that's what the `test_database` fixture does.)
 
 **`test_rule_engine.py`** — the rule-based engine, which is what runs when no
-`ANTHROPIC_API_KEY` is set. Checks that a question lands on the right table, that
+no AI key is set. Checks that a question lands on the right table, that
 aggregates are detected, and — importantly — that filter values go in as bound parameters
 instead of being pasted into the SQL text.
 
