@@ -59,9 +59,24 @@ body {
 }
 
 .container {
-    max-width: 780px;
+    max-width: 900px;
     margin: 0 auto;
     animation: fadeUp 0.4s ease both;
+}
+
+/* Use more of the screen on laptop/desktop widths instead of leaving large
+   empty margins on either side, while keeping .container-narrow (auth
+   forms) at its own fixed width regardless of viewport. */
+@media (min-width: 1100px) {
+    .container:not(.container-narrow) {
+        max-width: 1080px;
+    }
+}
+
+@media (min-width: 1500px) {
+    .container:not(.container-narrow) {
+        max-width: 1200px;
+    }
 }
 
 header {
@@ -734,7 +749,7 @@ h1 {
 }
 
 .topbar-inner {
-    max-width: 780px;
+    max-width: 900px;
     margin: 0 auto;
     padding: 14px 18px;
     display: flex;
@@ -742,6 +757,20 @@ h1 {
     justify-content: space-between;
     gap: 12px;
     flex-wrap: wrap;
+}
+
+/* Keep the nav bar's edges aligned with .container below it at the same
+   breakpoints (see .container rules above). */
+@media (min-width: 1100px) {
+    .topbar-inner {
+        max-width: 1080px;
+    }
+}
+
+@media (min-width: 1500px) {
+    .topbar-inner {
+        max-width: 1200px;
+    }
 }
 
 .topbar-brand {

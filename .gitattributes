@@ -1,0 +1,15 @@
+# Normalize line endings to LF in the repository, regardless of which OS
+# checks a file out or commits it. Git converts to the local OS convention
+# on checkout automatically, so this only affects what's stored in git —
+# it stops every file from showing as "changed" just because Windows and
+# Linux/macOS disagree about \r\n vs \n.
+* text=auto eol=lf
+
+# Binary files must never go through line-ending conversion.
+*.db binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.woff binary
+*.woff2 binary

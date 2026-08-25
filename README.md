@@ -86,3 +86,7 @@ All SQL execution uses parameterized queries for values; AI-generated SQL is add
 - **PostgreSQL connection strings are stored in plain text** at `data/uploads/postgres_connection.json` so the app can reconnect across requests. This is a single-user/local-tool design choice — don't point it at a production database with a shared secret you can't rotate. Encrypting this file (e.g. via `cryptography`'s Fernet, keyed off `SECRET_KEY`) would be the next step for a multi-tenant deployment.
 - **No CAPTCHA / device fingerprinting** on registration — the rate limiter is in-memory and per-process, which is enough to deter casual abuse but not a determined, distributed attacker.
 - **Content-Security-Policy allows `'unsafe-inline'`** for scripts/styles because the chart renderer and theme toggle currently use inline `<script>` blocks. Moving those into `frontend/static/js/` files and switching to a nonce-based CSP would let this be tightened further.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
