@@ -1,3 +1,8 @@
+"""Lets a user attach an external SQLite file (data/uploads/connected.db) and
+query it the same way as the built-in database. Only one external SQLite or
+PostgreSQL connection is active at a time — see backend/app.py:get_active_source.
+"""
+
 import os
 import sqlite3
 

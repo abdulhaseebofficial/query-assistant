@@ -1,3 +1,10 @@
+"""Keyword-based English/Roman-Urdu -> SQL translator for the built-in demo
+schema. This is the fallback engine used when the AI engine is unavailable
+or fails, so every query it builds is a fixed, hand-written SQL template with
+only the filter values parameterized — there's no user input in the SQL
+structure itself, which makes this engine inherently injection-safe.
+"""
+
 import re
 
 EMPLOYEE_WORDS = {

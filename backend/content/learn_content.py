@@ -1,3 +1,5 @@
+"""Static content for the /learn page: SQL concept cards and FAQ entries."""
+
 CONCEPTS = [
     {
         "level": "Basic",

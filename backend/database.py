@@ -1,3 +1,10 @@
+"""Schema and seed data for the built-in demo database (data/company.db).
+
+init_db() is idempotent — it creates tables if missing and only inserts the
+sample rows the first time (when `departments` is empty), so it's safe to
+call on every app startup.
+"""
+
 import sqlite3
 from datetime import date, timedelta
 
@@ -206,8 +213,3 @@ def init_db():
 
     conn.commit()
     conn.close()
-
-
-if __name__ == "__main__":
-    init_db()
-    print(f"Database '{DB_NAME}' ready with departments, employees, products, customers and orders.")

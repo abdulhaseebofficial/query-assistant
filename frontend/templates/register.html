@@ -25,6 +25,7 @@
             {% endif %}
 
             <form action="/register" method="POST" class="upload-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <label class="upload-field">
                     <span class="upload-label">Username</span>
                     <input type="text" name="username" pattern="[a-zA-Z0-9_]{3,30}" title="3-30 characters: letters, numbers, underscores" required autofocus>

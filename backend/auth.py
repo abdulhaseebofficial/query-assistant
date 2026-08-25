@@ -1,9 +1,17 @@
+"""User accounts: registration, login verification, and per-user query history."""
+
 import sqlite3
 
 from flask_login import UserMixin
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from backend.database import DB_NAME
+
+# A precomputed dummy hash, used to keep verify_password()'s runtime the same
+# whether or not the username exists — otherwise a "no such user" short-circuit
+# would return noticeably faster than "wrong password", letting an attacker
+# enumerate valid usernames purely by timing login responses.
+_DUMMY_HASH = generate_password_hash("not-a-real-password")
 
 
 class User(UserMixin):
@@ -49,7 +57,9 @@ def verify_password(username, password):
         row = conn.execute(
             "SELECT id, username, email, password_hash FROM users WHERE username = ?", (username,)
         ).fetchone()
-        if row is None or not check_password_hash(row["password_hash"], password):
+        stored_hash = row["password_hash"] if row is not None else _DUMMY_HASH
+        password_ok = check_password_hash(stored_hash, password)
+        if row is None or not password_ok:
             return None
         return _row_to_user(row)
     finally:

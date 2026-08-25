@@ -1,3 +1,12 @@
+"""Lets a user attach an external PostgreSQL database via a connection string
+and query it the same way as the built-in database.
+
+The DSN is persisted as plain text in data/uploads/postgres_connection.json so
+the app can reconnect across requests. That's a known, documented trade-off —
+see the "Known limitations" section in README.md — not something to "fix" by
+guessing at a different storage scheme.
+"""
+
 import json
 import os
 

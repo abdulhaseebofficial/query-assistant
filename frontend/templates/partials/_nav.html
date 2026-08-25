@@ -7,6 +7,7 @@
             <a class="topbar-link" href="/history">History</a>
             <span class="topbar-user">{{ current_user.username }}</span>
             <form action="/logout" method="POST" class="topbar-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="topbar-link topbar-link-btn">Log out</button>
             </form>
             {% else %}

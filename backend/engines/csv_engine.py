@@ -1,3 +1,8 @@
+"""Turns an uploaded CSV into a queryable SQLite table (`custom_data`), and
+provides a simple keyword-search query builder for it when the AI engine is
+unavailable.
+"""
+
 import csv
 import io
 import re

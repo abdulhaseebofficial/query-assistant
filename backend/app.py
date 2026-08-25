@@ -1,11 +1,23 @@
+"""Query Assistant — Flask web app.
+
+Turns a plain-English (or Roman Urdu) question into SQL, runs it against the
+built-in demo database, an uploaded CSV, or an externally connected
+SQLite/PostgreSQL database, and renders the result as a table, chart, and CSV
+export. See README.md for the request flow and the production checklist.
+"""
+
 import csv
 import io
 import os
 import re
+import secrets
 import sqlite3
 
 from flask import Flask, Response, redirect, render_template, request, url_for
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from flask_login import LoginManager, current_user, login_required, login_user, logout_user
+from flask_wtf import CSRFProtect
 from markupsafe import escape
 
 from backend import auth
@@ -20,12 +32,50 @@ from backend.utils import chart_utils
 
 app = Flask(__name__, template_folder=TEMPLATE_DIR, static_folder=STATIC_DIR)
 app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024  # 5 MB upload cap
-app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-change-me")
+
+# Fall back to a random per-process key instead of a hardcoded default: sessions
+# won't survive a restart if SECRET_KEY isn't set in the environment, but an
+# attacker can no longer forge session cookies against a key baked into the source.
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
+
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+# Only marked Secure when explicitly told we're behind HTTPS — defaulting this on
+# would silently break login over local http:// during development.
+app.config["SESSION_COOKIE_SECURE"] = os.environ.get("SESSION_COOKIE_SECURE", "false").strip().lower() in (
+    "1", "true", "yes",
+)
+
 app.jinja_env.filters["zip"] = zip
 
 login_manager = LoginManager()
 login_manager.login_view = "login"
 login_manager.init_app(app)
+
+# Protects every POST/PUT/PATCH/DELETE request with a per-session token; forms
+# must include {{ csrf_token() }} (auto-exposed in Jinja by CSRFProtect).
+csrf = CSRFProtect(app)
+
+# A generous global ceiling against scripted abuse, with tighter limits on the
+# auth endpoints below to slow down credential-stuffing / brute-force attempts.
+limiter = Limiter(get_remote_address, app=app, default_limits=["200 per minute"], storage_uri="memory://")
+
+
+@app.after_request
+def set_security_headers(response):
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "img-src 'self' data:; "
+        "connect-src 'self'; "
+        "frame-ancestors 'none'"
+    )
+    return response
 
 
 @login_manager.user_loader
@@ -499,6 +549,7 @@ def learn():
 
 
 @app.route("/register", methods=["GET", "POST"])
+@limiter.limit("5 per minute", methods=["POST"])
 def register():
     if current_user.is_authenticated:
         return redirect(url_for("index"))
@@ -513,8 +564,8 @@ def register():
             error = "Username must be 3-30 characters: letters, numbers, underscores only."
         elif "@" not in email or "." not in email:
             error = "Please enter a valid email address."
-        elif len(password) < 6:
-            error = "Password must be at least 6 characters."
+        elif len(password) < 8:
+            error = "Password must be at least 8 characters."
         else:
             try:
                 user = auth.create_user(username, email, password)
@@ -527,6 +578,7 @@ def register():
 
 
 @app.route("/login", methods=["GET", "POST"])
+@limiter.limit("10 per minute", methods=["POST"])
 def login():
     if current_user.is_authenticated:
         return redirect(url_for("index"))

@@ -37,12 +37,14 @@
             <div class="chips" style="margin-bottom: 40px;">
                 <a class="chip" href="/dataset">Query this dataset</a>
                 <form action="/dataset/clear" method="POST" style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="chip" style="cursor:pointer; font-family:inherit;">Remove dataset</button>
                 </form>
             </div>
             {% endif %}
 
             <form action="/upload" method="POST" enctype="multipart/form-data" class="upload-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <label class="upload-field">
                     <span class="upload-label">Dataset name</span>
                     <input type="text" name="dataset_name" placeholder="e.g. Inventory Records" maxlength="60">

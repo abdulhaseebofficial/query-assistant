@@ -1,3 +1,7 @@
+"""Turns a query result set into the minimal JSON shape the Chart.js partial
+(frontend/templates/partials/_chart.html) needs to draw a bar/line/pie chart.
+"""
+
 MAX_POINTS = 20
 
 

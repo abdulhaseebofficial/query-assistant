@@ -44,6 +44,7 @@
 
             <div class="chips" style="margin-bottom: 40px;">
                 <form action="/connect-db/clear" method="POST" style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="chip" style="cursor:pointer; font-family:inherit;">Disconnect this database</button>
                 </form>
             </div>
@@ -51,6 +52,7 @@
 
             <div class="connect-options">
                 <form action="/connect-db" method="POST" enctype="multipart/form-data" class="upload-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="upload-field">
                         <span class="upload-label">SQLite file</span>
                     </div>
@@ -61,6 +63,7 @@
                 </form>
 
                 <form action="/connect-db/postgres" method="POST" class="upload-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="upload-field">
                         <span class="upload-label">PostgreSQL / Supabase connection string</span>
                     </div>

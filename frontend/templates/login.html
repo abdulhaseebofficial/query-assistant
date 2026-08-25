@@ -25,6 +25,7 @@
             {% endif %}
 
             <form action="/login" method="POST" class="upload-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <label class="upload-field">
                     <span class="upload-label">Username</span>
                     <input type="text" name="username" required autofocus>
