@@ -4,32 +4,34 @@ Ask questions about your data in plain English (or Roman Urdu) — the app trans
 
 ## Project Structure
 
+Every folder below has its own `README.md` with a plain-English explanation of what's inside it and why — click through to whichever folder you're curious about.
+
 ```
 sql-project/
-├── backend/                 # Flask application (Python)
+├── backend/                 # Flask application (Python) — see backend/README.md
 │   ├── app.py                # Routes, request handling, view logic
 │   ├── config.py             # Central path configuration
 │   ├── database.py           # Demo database schema + seed data
 │   ├── auth.py                # User accounts, login, query history
-│   ├── engines/               # Natural-language → SQL engines
+│   ├── engines/               # Natural-language → SQL engines — see backend/engines/README.md
 │   │   ├── ai_engine.py          # Claude-powered SQL generation (optional)
 │   │   ├── rule_engine.py        # Rule-based fallback for the demo schema
 │   │   └── csv_engine.py         # Query builder for uploaded CSV data
-│   ├── connectors/            # External data source adapters
+│   ├── connectors/            # External data source adapters — see backend/connectors/README.md
 │   │   ├── sqlite_connector.py   # Connect an uploaded .db/.sqlite file
 │   │   └── postgres_connector.py # Connect via a PostgreSQL DSN
-│   ├── content/
+│   ├── content/                # see backend/content/README.md
 │   │   └── learn_content.py      # Static content for the "Learn SQL" page
-│   └── utils/
+│   └── utils/                  # see backend/utils/README.md
 │       └── chart_utils.py        # Turns query results into chart-ready data
 │
-├── frontend/                 # Everything rendered in the browser
+├── frontend/                 # Everything rendered in the browser — see frontend/README.md
 │   ├── templates/             # Jinja2 HTML templates
 │   │   └── partials/             # Shared fragments (_nav.html, _chart.html)
 │   └── static/
 │       └── css/                  # Stylesheets
 │
-├── data/                     # Runtime data (git-ignored, generated locally)
+├── data/                     # Runtime data, git-ignored — see data/README.md
 │   ├── company.db                # Demo SQLite database
 │   └── uploads/                   # Uploaded CSVs / connected databases
 │
