@@ -8,6 +8,7 @@ import io
 import re
 
 from backend.engines.phrases import (
+    ALL_PHRASES,
     AVG_PHRASES,
     COUNT_PHRASES,
     HIGHEST_PHRASES,
@@ -15,7 +16,6 @@ from backend.engines.phrases import (
     OVERVIEW_PHRASES,
     SINGLE_ROW_PHRASES,
     SUM_PHRASES,
-    all_phrases,
 )
 
 
@@ -260,7 +260,7 @@ def build_custom_query(user_input, columns, table_name="custom_data", placeholde
     # words that say *which rows*. Without this, "average revenue" searched every cell
     # for the text "average", matched nothing, and averaged an empty set to null.
     residue = text
-    for phrase in all_phrases():
+    for phrase in ALL_PHRASES:
         residue = residue.replace(phrase, " ")
 
     column_tokens = _column_tokens(columns)

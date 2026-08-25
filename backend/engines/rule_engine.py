@@ -6,6 +6,7 @@ structure itself, which makes this engine inherently injection-safe.
 """
 
 import re
+from functools import cache
 
 from backend import db
 from backend.engines.phrases import (
@@ -125,15 +126,19 @@ UNSUPPORTED_PATTERNS = (
 )
 
 
-def _without_recognised_phrases(text):
-    """Strip the phrases the templates do encode, leaving only what they don't.
+# Longest first, so "most expensive" is consumed before the bare "most" in
+# UNSUPPORTED_PATTERNS can match it. Sorted once: the tuple never changes.
+_RECOGNISED_LONGEST_FIRST = tuple(sorted(RECOGNISED_PHRASES, key=len, reverse=True))
 
-    Longest first, so "most expensive" is consumed before the bare "most" in
-    UNSUPPORTED_PATTERNS can match it.
-    """
-    for phrase in sorted(RECOGNISED_PHRASES, key=len, reverse=True):
+
+def _without_recognised_phrases(text):
+    """Strip the phrases the templates do encode, leaving only what they don't."""
+    for phrase in _RECOGNISED_LONGEST_FIRST:
         text = text.replace(phrase, " ")
     return text
+
+
+_COMPILED_UNSUPPORTED = tuple((re.compile(p), label) for p, label in UNSUPPORTED_PATTERNS)
 
 
 def unsupported_constraints(text):
@@ -144,18 +149,37 @@ def unsupported_constraints(text):
     """
     residue = _without_recognised_phrases(text)
     found = []
-    for pattern, label in UNSUPPORTED_PATTERNS:
-        if re.search(pattern, residue) and label not in found:
+    for pattern, label in _COMPILED_UNSUPPORTED:
+        if pattern.search(residue) and label not in found:
             found.append(label)
     return found
 
 
+@cache
+def _word_pattern(word):
+    return re.compile(r"\b" + re.escape(word) + r"\b")
+
+
+@cache
+def _any_of_pattern(words):
+    """One pattern matching whichever of `words` appears first.
+
+    The word sets are module constants asked the same questions over and over, so
+    building and matching them one word at a time meant re-escaping the same strings
+    on every request. One alternation, compiled once, answers the same question.
+    Alternation order doesn't matter here because the result is a boolean, and the
+    engine backtracks across branches, so a short word that fails its trailing
+    boundary still lets a longer one match.
+    """
+    return re.compile(r"\b(?:" + "|".join(re.escape(w) for w in words) + r")\b")
+
+
 def word_in(word, text):
-    return re.search(r"\b" + re.escape(word.lower()) + r"\b", text) is not None
+    return _word_pattern(word.lower()).search(text) is not None
 
 
 def any_word_in(words, text):
-    return any(word_in(w, text) for w in words)
+    return _any_of_pattern(tuple(sorted(words))).search(text) is not None
 
 
 # "the highest paid employee" wants one row; "highest paid employees" wants a list.
@@ -185,19 +209,25 @@ def wants_single_row(text):
     return any_word_in(("employee", "worker", "product", "item", "customer"), text)
 
 
+# The five lists of names a question might mention, fetched together. Five separate
+# round trips per question was the single most expensive thing the engine did, and
+# nothing here is cached: a department added a moment ago must be matchable now.
+_REFERENCE_SQL = """
+SELECT 'departments' AS kind, name AS value FROM departments
+UNION ALL SELECT 'categories', category FROM (SELECT DISTINCT category FROM products)
+UNION ALL SELECT 'cities', city FROM (SELECT DISTINCT city FROM customers)
+UNION ALL SELECT 'product_names', name FROM products
+UNION ALL SELECT 'customer_names', name FROM customers
+"""
+
+REFERENCE_KINDS = ("departments", "categories", "cities", "product_names", "customer_names")
+
+
 def get_reference_data(conn):
-    departments = [r[0] for r in conn.execute("SELECT name FROM departments").fetchall()]
-    categories = [r[0] for r in conn.execute("SELECT DISTINCT category FROM products").fetchall()]
-    cities = [r[0] for r in conn.execute("SELECT DISTINCT city FROM customers").fetchall()]
-    product_names = [r[0] for r in conn.execute("SELECT name FROM products").fetchall()]
-    customer_names = [r[0] for r in conn.execute("SELECT name FROM customers").fetchall()]
-    return {
-        "departments": departments,
-        "categories": categories,
-        "cities": cities,
-        "product_names": product_names,
-        "customer_names": customer_names,
-    }
+    grouped = {kind: [] for kind in REFERENCE_KINDS}
+    for row in conn.execute(_REFERENCE_SQL).fetchall():
+        grouped[row[0]].append(row[1])
+    return grouped
 
 
 def detect_domain(text):

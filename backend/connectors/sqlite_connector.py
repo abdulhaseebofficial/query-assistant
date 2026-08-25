@@ -46,35 +46,56 @@ def get_connection():
     return conn
 
 
+def _table_names(conn):
+    """Just the names — no row counts, no columns."""
+    rows = conn.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+    ).fetchall()
+    return [r[0] for r in rows if r[0] not in SYSTEM_TABLES and not r[0].startswith("sqlite_")]
+
+
+def _describe(conn, name):
+    ident = quote_ident(name)
+    count = conn.execute(f"SELECT COUNT(*) FROM {ident}").fetchone()[0]
+    col_info = conn.execute(f"PRAGMA table_info({ident})").fetchall()
+    return {
+        "name": name,
+        "row_count": count,
+        "columns": [r[1] for r in col_info],
+        "types": [r[2] or "TEXT" for r in col_info],
+    }
+
+
 def list_tables():
+    """Every table with its row count and columns — for the connect page, which shows them."""
     conn = get_connection()
     if conn is None:
         return []
     try:
-        rows = conn.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
-        ).fetchall()
-        names = [r[0] for r in rows if r[0] not in SYSTEM_TABLES and not r[0].startswith("sqlite_")]
-
-        tables = []
-        for name in names:
-            ident = quote_ident(name)
-            count = conn.execute(f"SELECT COUNT(*) FROM {ident}").fetchone()[0]
-            col_info = conn.execute(f"PRAGMA table_info({ident})").fetchall()
-            columns = [r[1] for r in col_info]
-            types = [r[2] or "TEXT" for r in col_info]
-            tables.append({"name": name, "row_count": count, "columns": columns, "types": types})
-        return tables
+        return [_describe(conn, name) for name in _table_names(conn)]
     finally:
         conn.close()
 
 
 def get_table(table_name):
-    """Validate table_name against the real schema and return its info, or None."""
-    for table in list_tables():
-        if table["name"] == table_name:
-            return table
-    return None
+    """Validate table_name against the real schema and return its info, or None.
+
+    Describes only the table asked for. This runs on every question and every
+    export, and it used to go through list_tables() — counting the rows of every
+    other table in the database first, which on a connected database of any size
+    meant a full scan per table before a single question could be answered.
+    """
+    conn = get_connection()
+    if conn is None:
+        return None
+    try:
+        # Still checked against the live catalogue: that check is what keeps an
+        # arbitrary name from reaching the SQL below.
+        if table_name not in _table_names(conn):
+            return None
+        return _describe(conn, table_name)
+    finally:
+        conn.close()
 
 
 def clear_connection():

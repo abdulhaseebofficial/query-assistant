@@ -1,6 +1,6 @@
 # tests/
 
-The automated checks that run on every push and pull request. 408 tests, about six seconds,
+The automated checks that run on every push and pull request. 420 tests, about nine seconds,
 no network access and no API key required.
 
 ```bash
@@ -42,6 +42,12 @@ app would actually send and parse it with sqlglot's PostgreSQL dialect, which ca
 dialect bugs really look like: an identity column in SQLite's syntax, a `strftime` that
 doesn't exist in PostgreSQL, a `?` where `%s` belongs. Each of those would otherwise only
 show up as a 500 on the deployment.
+
+**`test_query_efficiency.py`** — work that grows with the size of the data, on paths
+that run once per request. Neither problem was visible against the demo database — five
+tables and eighteen employees hides a lot — but `get_table()` used to `COUNT(*)` every
+table in a connected database before answering a single question. These pin the query
+counts so it can't creep back.
 
 **`test_deployment.py`** — the serverless setup. Vercel's deployment directory is
 read-only and its `/tmp` is wiped between cold starts, so these check that `vercel.json`

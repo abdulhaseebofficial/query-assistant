@@ -125,31 +125,37 @@ def _connect(dsn):
 
 def _list_tables_with(conn):
     cur = conn.cursor()
+    names = _table_names_with(cur)
+    tables = [_describe_with(cur, name) for name in names]
+    cur.close()
+    return tables
+
+
+def _table_names_with(cur):
+    """Just the names — no row counts, no columns."""
     cur.execute(
         "SELECT table_name FROM information_schema.tables "
         "WHERE table_schema = 'public' AND table_type = 'BASE TABLE' "
         "ORDER BY table_name"
     )
-    names = [row["table_name"] for row in cur.fetchall()]
+    return [row["table_name"] for row in cur.fetchall()]
 
-    tables = []
-    for name in names:
-        cur.execute(f"SELECT COUNT(*) AS count FROM {quote_ident(name)}")
-        count = cur.fetchone()["count"]
-        cur.execute(
-            "SELECT column_name, data_type FROM information_schema.columns "
-            "WHERE table_schema = 'public' AND table_name = %s ORDER BY ordinal_position",
-            (name,),
-        )
-        col_rows = cur.fetchall()
-        tables.append({
-            "name": name,
-            "row_count": count,
-            "columns": [r["column_name"] for r in col_rows],
-            "types": [r["data_type"] for r in col_rows],
-        })
-    cur.close()
-    return tables
+
+def _describe_with(cur, name):
+    cur.execute(f"SELECT COUNT(*) AS count FROM {quote_ident(name)}")
+    count = cur.fetchone()["count"]
+    cur.execute(
+        "SELECT column_name, data_type FROM information_schema.columns "
+        "WHERE table_schema = 'public' AND table_name = %s ORDER BY ordinal_position",
+        (name,),
+    )
+    col_rows = cur.fetchall()
+    return {
+        "name": name,
+        "row_count": count,
+        "columns": [r["column_name"] for r in col_rows],
+        "types": [r["data_type"] for r in col_rows],
+    }
 
 
 def save_connection(dsn):
@@ -195,10 +201,27 @@ def list_tables():
 
 
 def get_table(table_name):
-    for table in list_tables():
-        if table["name"] == table_name:
-            return table
-    return None
+    """Describe one table, or None if the connected database has no such table.
+
+    This runs on every question and every export. Going through list_tables() meant
+    a COUNT(*) over every other table in the database first — on a real PostgreSQL
+    of any size, a full scan per table before a single question could be answered.
+    """
+    conn = get_connection()
+    if conn is None:
+        return None
+    try:
+        cur = conn.cursor()
+        try:
+            # Still checked against the live catalogue: that check is what keeps an
+            # arbitrary name from reaching the SQL in _describe_with.
+            if table_name not in _table_names_with(cur):
+                return None
+            return _describe_with(cur, table_name)
+        finally:
+            cur.close()
+    finally:
+        conn.close()
 
 
 def clear_connection():

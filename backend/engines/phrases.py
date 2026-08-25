@@ -60,15 +60,22 @@ LOWEST_PHRASES = (
 )
 
 
-def all_phrases():
-    """Every phrase above, longest first.
-
-    Callers subtract these from a question so that what remains is the part naming
-    actual values to search for — otherwise "average revenue" looks for rows
-    containing the text "average".
-    """
-    combined = (
-        COUNT_PHRASES + SUM_PHRASES + SUM_NOUNS + AVG_PHRASES
-        + SINGLE_ROW_PHRASES + OVERVIEW_PHRASES + HIGHEST_PHRASES + LOWEST_PHRASES
+# Every phrase above, longest first. Callers subtract these from a question so that
+# what remains is the part naming actual values to search for — otherwise "average
+# revenue" looks for rows containing the text "average". Built once at import: the
+# tuples are constants, and this used to be re-sorted on every question.
+ALL_PHRASES = tuple(
+    sorted(
+        set(
+            COUNT_PHRASES + SUM_PHRASES + SUM_NOUNS + AVG_PHRASES
+            + SINGLE_ROW_PHRASES + OVERVIEW_PHRASES + HIGHEST_PHRASES + LOWEST_PHRASES
+        ),
+        key=len,
+        reverse=True,
     )
-    return sorted(set(combined), key=len, reverse=True)
+)
+
+
+def all_phrases():
+    """Kept as a function for callers that read better calling one."""
+    return ALL_PHRASES
