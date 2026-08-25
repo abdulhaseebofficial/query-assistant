@@ -163,8 +163,38 @@
                     </div>
                 {% else %}
                     <div class="no-results">
-                        <p class="no-results-title">Couldn't tell what you're asking for</p>
-                        <p>Try mentioning <em>employees</em>, <em>departments</em>, <em>products</em>, <em>customers</em>, or <em>orders</em>.</p>
+                    {% if not result.on_topic %}
+                        <p class="no-results-title">That's not something this database can answer</p>
+                        <p>It holds company data — try asking about <em>employees</em>, <em>departments</em>, <em>products</em>, <em>customers</em>, or <em>orders</em>.</p>
+
+                    {% elif result.ai_available %}
+                        <p class="no-results-title">{{ result.provider }} couldn't turn that into a valid query</p>
+                        <p>
+                            It understood the topic but didn't produce SQL that runs against this schema.
+                            Try rephrasing it, or naming the columns you want.
+                        </p>
+
+                    {% else %}
+                        <p class="no-results-title">That question needs AI turned on</p>
+                        <p>
+                            {% if result.constraints %}
+                                It asks for {{ result.constraints | join(' and ') }}, which the
+                                built-in keyword engine has no way to express — so rather than
+                                answer a different question, it stopped.
+                            {% else %}
+                                The built-in keyword engine only recognises a fixed set of phrasings.
+                            {% endif %}
+                        </p>
+                        <p class="no-results-hint">
+                            Add <code>GEMINI_API_KEY</code> (or <code>ANTHROPIC_API_KEY</code>) to your
+                            <code>.env</code> file and restart — then questions like this one are answered
+                            properly. See <code>.env.example</code>.
+                        </p>
+                        <p class="no-results-hint">
+                            Without a key, it can still handle things like:
+                            {% for ex in examples[:4] %}<a class="chip chip-sm" href="/?q={{ ex|urlencode }}">{{ ex }}</a>{% endfor %}
+                        </p>
+                    {% endif %}
                     </div>
                 {% endif %}
             {% else %}

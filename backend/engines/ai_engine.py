@@ -157,6 +157,21 @@ def _get_client(provider):
     return client
 
 
+def is_available():
+    """True when a provider is configured and its client could be built.
+
+    The UI uses this to explain *why* a question went unanswered — "add an API
+    key" and "the model couldn't write that query" need different advice.
+    """
+    provider = _configured_provider()
+    return provider is not None and _get_client(provider) is not None
+
+
+def active_provider_name():
+    """Human-readable name of the provider in use, or None."""
+    return {"gemini": "Gemini", "anthropic": "Claude"}.get(_configured_provider())
+
+
 def build_schema_description(columns, types=None, table_name="data"):
     if types:
         cols = ", ".join(f"{c} ({t})" for c, t in zip(columns, types, strict=True))

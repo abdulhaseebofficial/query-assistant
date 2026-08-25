@@ -1,6 +1,6 @@
 # tests/
 
-The automated checks that run on every push and pull request. 158 tests, about four seconds,
+The automated checks that run on every push and pull request. 230 tests, about six seconds,
 no network access and no API key required.
 
 ```bash
@@ -35,6 +35,14 @@ through the database.
 
 **`test_chart_utils.py`** — when a result set is worth drawing and when it isn't. Notably:
 `id` columns are numeric but plotting them is meaningless, and a single row is not a chart.
+
+**`test_honest_answers.py`** — the rule engine must decline what it can't express.
+Every builder ends in a catch-all "list everything" branch, so before this was gated the
+engine answered questions it hadn't understood — "employees earning more than 100000"
+returned all 18 employees, explained as "Lists all employees, sorted by name". The tests
+pin both halves: a list of questions that must be refused (with the reason named, since
+the page shows it), and a list that must still be answered, so the gate can't be
+over-applied into refusing everything.
 
 **`test_security.py`** — one test per real finding, so a failure means a defence was
 removed rather than a style rule broken. Covers CSV formula injection (a cell like

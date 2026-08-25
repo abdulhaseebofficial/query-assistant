@@ -23,7 +23,7 @@ from backend.config import STATIC_DIR, TEMPLATE_DIR
 from backend.connectors import postgres_connector, sqlite_connector
 from backend.content.learn_content import CONCEPTS, FAQS
 from backend.database import DB_NAME
-from backend.engines import ai_engine
+from backend.engines import ai_engine, rule_engine
 from backend.engines.csv_engine import build_custom_query, clear_dataset, get_dataset_info, load_csv
 from backend.engines.rule_engine import interpret
 from backend.utils import chart_utils
@@ -120,6 +120,24 @@ def get_connection():
     conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row
     return conn
+
+
+def describe_failure(user_input):
+    """Explain why a question went unanswered, so the page can give real advice.
+
+    Three situations need three different messages: the question isn't about this
+    data at all; it is, but it asks for something only a model can express and no
+    API key is configured; or a model was asked and still couldn't produce a valid
+    query. Collapsing them into one "couldn't tell what you're asking for" is what
+    made the app feel broken.
+    """
+    text = user_input.strip().lower()
+    return {
+        "on_topic": rule_engine.detect_domain(text) is not None,
+        "constraints": rule_engine.unsupported_constraints(text),
+        "ai_available": ai_engine.is_available(),
+        "provider": ai_engine.active_provider_name(),
+    }
 
 
 def _attachment_header(filename):
@@ -258,7 +276,7 @@ def index():
     if user_input:
         outcome = run_query(user_input)
         if outcome is None:
-            result = {"understood": False}
+            result = {"understood": False, **describe_failure(user_input)}
         else:
             outcome["understood"] = True
             outcome["sql_display"] = sql_for_display(outcome["sql"], outcome["params"])

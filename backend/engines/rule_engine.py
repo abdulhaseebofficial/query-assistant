@@ -26,6 +26,72 @@ STATUS_WORDS = {
     "cancelled": "Cancelled", "canceled": "Cancelled",
 }
 
+# Every phrase the builders below actually encode into SQL. Kept as one list so
+# `unsupported_constraints` can subtract it from a question and look at what's left.
+RECOGNISED_PHRASES = (
+    COUNT_PHRASES
+    + SUM_PHRASES
+    + AVG_PHRASES
+    + tuple(STATUS_WORDS)
+    # build_employees_query
+    + ("highest paid", "top paid", "best paid", "most paid", "newest", "recently hired", "new joiners", "recent hires")
+    # build_products_query
+    + ("low stock", "low on stock", "low in stock", "out of stock", "running low", "kam stock")
+    + ("most expensive", "least expensive", "expensive", "costly", "priciest", "cheap", "affordable", "budget")
+    # build_orders_query
+    + ("today", "this month", "current month", "last month", "previous month", "this year", "current year")
+)
+
+# A question can name a constraint these fixed templates have no way to express —
+# a threshold, a ranking, a negation, a date range. Before this check existed the
+# builders quietly fell through to their catch-all branch, so "employees earning
+# more than 100000" returned *every* employee under the explanation "Lists all
+# employees, sorted by name". A confidently wrong answer is worse than no answer,
+# so `interpret` now declines and lets the caller say so.
+UNSUPPORTED_PATTERNS = (
+    (r"\d", "a specific number"),
+    (r"\b(more|greater|higher|larger|older|newer|bigger)\s+than\b", "a comparison"),
+    (r"\b(less|fewer|lower|smaller|cheaper)\s+than\b", "a comparison"),
+    (r"\b(over|under|above|below|at least|at most|minimum|maximum|between)\b", "a comparison"),
+    (r"\b(zyada|ziada)\b", "a comparison"),
+    (r"\b(most|least|top|bottom|highest|lowest|biggest|largest|smallest|best|worst|rank)\b", "a ranking"),
+    (r"\b(never|without|none|not|no)\b", "a negation"),
+    (r"\b(nahi|bina)\b", "a negation"),
+    (r"\b(haven'?t|hasn'?t|didn'?t|don'?t|doesn'?t)\b", "a negation"),
+    (r"\b(per|each|group(ed)? by|breakdown|grouped)\b", "a grouping"),
+    (r"\b(before|after|since|during|last year|yesterday|older|since)\b", "a date range"),
+    (
+        r"\b(january|february|march|april|june|july|august|september|october|november|december)\b",
+        "a date range",
+    ),
+    (r"\b(who|which|whose|that)\s+\w*\s*(ordered|bought|purchased|placed|joined)\b", "a link between tables"),
+)
+
+
+def _without_recognised_phrases(text):
+    """Strip the phrases the templates do encode, leaving only what they don't.
+
+    Longest first, so "most expensive" is consumed before the bare "most" in
+    UNSUPPORTED_PATTERNS can match it.
+    """
+    for phrase in sorted(RECOGNISED_PHRASES, key=len, reverse=True):
+        text = text.replace(phrase, " ")
+    return text
+
+
+def unsupported_constraints(text):
+    """Names of the constraints in `text` that no template can express.
+
+    Empty means the rule engine can answer honestly; anything else means it would
+    be guessing.
+    """
+    residue = _without_recognised_phrases(text)
+    found = []
+    for pattern, label in UNSUPPORTED_PATTERNS:
+        if re.search(pattern, residue) and label not in found:
+            found.append(label)
+    return found
+
 
 def word_in(word, text):
     return re.search(r"\b" + re.escape(word.lower()) + r"\b", text) is not None
@@ -307,9 +373,21 @@ DOMAIN_BUILDERS = {
 
 
 def interpret(user_input, conn):
+    """Build SQL for `user_input`, or return None when that can't be done honestly.
+
+    None has two causes, and the caller is told which via `unsupported_constraints`:
+    the question isn't about this schema at all, or it is but asks for something
+    these fixed templates can't express.
+    """
     text = user_input.strip().lower()
     domain = detect_domain(text)
     if domain is None:
+        return None
+
+    # Refuse before building. Every builder ends in a catch-all "list everything"
+    # branch, so without this the answer to an unsupported question is a full table
+    # dump wearing an explanation that describes a question nobody asked.
+    if unsupported_constraints(text):
         return None
 
     aggregate = detect_aggregate(text)

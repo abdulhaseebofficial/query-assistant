@@ -11,7 +11,7 @@ database, a CSV you upload, or your own SQLite / PostgreSQL database.
 [![CI](https://github.com/abdulhaseebofficial/query-assistant/actions/workflows/ci.yml/badge.svg)](https://github.com/abdulhaseebofficial/query-assistant/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/Flask-3.0-000000?logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
-[![Tests](https://img.shields.io/badge/tests-158%20passing-3fb950)](tests/)
+[![Tests](https://img.shields.io/badge/tests-230%20passing-3fb950)](tests/)
 [![Ruff](https://img.shields.io/badge/lint-ruff-261230?logo=ruff&logoColor=white)](https://docs.astral.sh/ruff/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
@@ -40,6 +40,7 @@ actually had.
 | **Roman Urdu too** | *"kitne employees hain"* works as well as *"how many employees"* |
 | **Shows its work** | Every answer comes with the generated SQL, syntax-highlighted and copyable |
 | **Bring your own model** | Google Gemini or Anthropic Claude writes the SQL — set whichever key you have, or neither, and a rule-based engine takes over so the app never hard-fails |
+| **Says when it doesn't know** | The rule-based engine answers only the phrasings it genuinely encodes. Ask it something it can't express and it says so, and says why, instead of returning a table that looks like an answer |
 | **Your own data** | Upload a CSV, connect a SQLite file, or paste a PostgreSQL / Supabase connection string |
 | **Tables and charts** | Results render as a table, and as a bar / line / pie chart when the shape of the data suits one |
 | **CSV export** | Download any result set |
@@ -99,6 +100,14 @@ that are covered.
 If the AI engine is unavailable, returns something invalid, or produces SQL that fails to
 run, the rule-based engine picks it up. There is no state in which a missing API key
 breaks the app.
+
+The rule-based engine is deliberately narrow, and it knows it. It recognises a fixed set
+of phrasings; anything asking for a threshold, a ranking, a negation, a date range, or a
+grouping is something its templates cannot express. Rather than fall through to "list
+everything" — which is what it used to do, returning all 18 employees for *"employees
+earning more than 100000"* under the explanation "Lists all employees, sorted by name" —
+it declines and the page explains which part it couldn't handle and that an API key
+would answer it. A confidently wrong answer is worse than no answer.
 
 ## Screenshots
 
@@ -160,7 +169,7 @@ query-assistant/
 │   ├── templates/               # Jinja2 templates (+ partials/)
 │   └── static/css/              # Stylesheets
 │
-├── tests/                    # 158 tests, ~2s, no network — tests/README.md
+├── tests/                    # 230 tests, ~2s, no network — tests/README.md
 ├── data/                     # Runtime data, git-ignored — data/README.md
 ├── docs/screenshots/         # Images used by this README
 ├── run.py                    # Entry point
@@ -188,7 +197,7 @@ and fill in what you need.
 ```bash
 pip install -r requirements.txt -r requirements-dev.txt
 
-pytest              # 158 tests, about four seconds
+pytest              # 230 tests, about six seconds
 ruff check .        # lint
 ```
 
