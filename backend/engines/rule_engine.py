@@ -281,7 +281,7 @@ def build_employees_query(text, aggregate, ref):
     return sql, params, explanation
 
 
-def build_departments_query(text, aggregate, ref):
+def build_departments_query(_text, _aggregate, _ref):
     sql = (
         "SELECT d.name, d.location, d.manager_name, COUNT(e.id) AS employee_count "
         "FROM departments d LEFT JOIN employees e ON e.department_id = d.id "

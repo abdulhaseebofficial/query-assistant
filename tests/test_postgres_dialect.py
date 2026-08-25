@@ -49,14 +49,12 @@ class TestDialectSelection:
         from backend import db
 
         assert db.IS_POSTGRES is False
-        assert db.PLACEHOLDER == "?"
         assert db.DIALECT == "SQLite"
 
     def test_a_database_url_switches_everything_over(self, postgres_modules):
         db, _ = postgres_modules
 
         assert db.IS_POSTGRES is True
-        assert db.PLACEHOLDER == "%s"
         assert db.DIALECT == "PostgreSQL"
 
 

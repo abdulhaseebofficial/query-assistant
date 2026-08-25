@@ -52,7 +52,7 @@ login_manager.init_app(app)
 
 # Protects every POST/PUT/PATCH/DELETE request with a per-session token; forms
 # must include {{ csrf_token() }} (auto-exposed in Jinja by CSRFProtect).
-csrf = CSRFProtect(app)
+CSRFProtect(app)
 
 # A generous global ceiling against scripted abuse, with tighter limits on the
 # auth endpoints below to slow down credential-stuffing / brute-force attempts.

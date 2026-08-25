@@ -28,7 +28,6 @@ DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
 IS_POSTGRES = bool(DATABASE_URL)
 
 DIALECT = "PostgreSQL" if IS_POSTGRES else "SQLite"
-PLACEHOLDER = "%s" if IS_POSTGRES else "?"
 
 # An auto-incrementing primary key.
 IDENTITY_PK = (

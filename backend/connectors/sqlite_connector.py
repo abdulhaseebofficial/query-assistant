@@ -7,21 +7,10 @@ import os
 import sqlite3
 
 from backend.config import CONNECTED_DB_PATH, UPLOAD_DIR
+from backend.connectors import quote_ident
 
 SQLITE_MAGIC = b"SQLite format 3\x00"
 SYSTEM_TABLES = {"sqlite_sequence", "sqlite_stat1", "custom_data", "custom_meta"}
-
-
-def _quote_ident(name):
-    """Quote a schema-supplied identifier for interpolation into SQL.
-
-    Table names can't be bound as parameters, so they get interpolated — and a
-    table name is not automatically safe just because it came from the database's
-    own catalogue. Both SQLite and PostgreSQL allow a double quote inside an
-    identifier, which would otherwise close the quoting early and let the rest of
-    the name be read as SQL. Doubling the quote is the escape both engines define.
-    """
-    return '"' + name.replace('"', '""') + '"'
 
 
 def is_connected():
@@ -69,7 +58,7 @@ def list_tables():
 
         tables = []
         for name in names:
-            ident = _quote_ident(name)
+            ident = quote_ident(name)
             count = conn.execute(f"SELECT COUNT(*) FROM {ident}").fetchone()[0]
             col_info = conn.execute(f"PRAGMA table_info({ident})").fetchall()
             columns = [r[1] for r in col_info]

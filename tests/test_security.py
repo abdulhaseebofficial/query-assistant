@@ -152,8 +152,8 @@ class TestIdentifierQuoting:
         ],
     )
     def test_embedded_quotes_are_doubled_not_dropped(self, name, expected):
-        assert sqlite_connector._quote_ident(name) == expected
-        assert postgres_connector._quote_ident(name) == expected
+        assert sqlite_connector.quote_ident(name) == expected
+        assert postgres_connector.quote_ident(name) == expected
 
 
 class TestResponseHeaders:

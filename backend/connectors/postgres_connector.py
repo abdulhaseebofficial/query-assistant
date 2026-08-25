@@ -18,6 +18,7 @@ import psycopg2.extras
 
 from backend.config import POSTGRES_CONFIG_PATH as CONFIG_PATH
 from backend.config import UPLOAD_DIR
+from backend.connectors import quote_ident
 
 # Connecting to a private address is normal when you run Postgres on your own
 # machine, and a server-side request forgery primitive when the app is reachable
@@ -122,18 +123,6 @@ def _connect(dsn):
         raise ValueError(_friendly_connection_error(exc)) from exc
 
 
-def _quote_ident(name):
-    """Quote a schema-supplied identifier for interpolation into SQL.
-
-    Table names can't be bound as parameters, so they get interpolated — and a
-    table name is not automatically safe just because it came from the database's
-    own catalogue. Both SQLite and PostgreSQL allow a double quote inside an
-    identifier, which would otherwise close the quoting early and let the rest of
-    the name be read as SQL. Doubling the quote is the escape both engines define.
-    """
-    return '"' + name.replace('"', '""') + '"'
-
-
 def _list_tables_with(conn):
     cur = conn.cursor()
     cur.execute(
@@ -145,7 +134,7 @@ def _list_tables_with(conn):
 
     tables = []
     for name in names:
-        cur.execute(f"SELECT COUNT(*) AS count FROM {_quote_ident(name)}")
+        cur.execute(f"SELECT COUNT(*) AS count FROM {quote_ident(name)}")
         count = cur.fetchone()["count"]
         cur.execute(
             "SELECT column_name, data_type FROM information_schema.columns "

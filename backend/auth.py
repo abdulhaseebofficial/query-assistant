@@ -37,16 +37,6 @@ def find_by_id(user_id):
         conn.close()
 
 
-def find_by_username(username):
-    conn = _connect()
-    try:
-        row = conn.execute(
-            "SELECT id, username, email FROM users WHERE username = ?", (username,)
-        ).fetchone()
-        return _row_to_user(row)
-    finally:
-        conn.close()
-
 
 def verify_password(username, password):
     conn = _connect()
