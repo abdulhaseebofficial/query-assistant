@@ -1,6 +1,6 @@
 # tests/
 
-The automated checks that run on every push and pull request. 230 tests, about six seconds,
+The automated checks that run on every push and pull request. 240 tests, about seven seconds,
 no network access and no API key required.
 
 ```bash
@@ -35,6 +35,13 @@ through the database.
 
 **`test_chart_utils.py`** — when a result set is worth drawing and when it isn't. Notably:
 `id` columns are numeric but plotting them is meaningless, and a single row is not a chart.
+
+**`test_deployment.py`** — the serverless setup. Vercel's deployment directory is
+read-only and its `/tmp` is wiped between cold starts, so these check that `vercel.json`
+routes every path to the one function, that `DATA_DIR` moves every written path somewhere
+writable, and that importing `api/index.py` into an empty directory seeds the database and
+serves a real answer. The cold-start tests run in a subprocess because `config.py` reads
+the environment once at import.
 
 **`test_honest_answers.py`** — the rule engine must decline what it can't express.
 Every builder ends in a catch-all "list everything" branch, so before this was gated the

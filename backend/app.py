@@ -19,7 +19,7 @@ from flask_wtf import CSRFProtect
 from markupsafe import escape
 
 from backend import auth
-from backend.config import STATIC_DIR, TEMPLATE_DIR
+from backend.config import EPHEMERAL_STORAGE, STATIC_DIR, TEMPLATE_DIR
 from backend.connectors import postgres_connector, sqlite_connector
 from backend.content.learn_content import CONCEPTS, FAQS
 from backend.database import DB_NAME
@@ -93,6 +93,16 @@ def set_security_headers(response):
         "frame-ancestors 'none'"
     )
     return response
+
+
+@app.context_processor
+def inject_deployment_notice():
+    """Every page needs to know whether its data survives a restart.
+
+    A demo deployment stores everything on a disk that gets wiped, and someone
+    registering an account there deserves to be told before they do it, not after.
+    """
+    return {"ephemeral_storage": EPHEMERAL_STORAGE}
 
 
 @login_manager.user_loader

@@ -11,7 +11,7 @@ database, a CSV you upload, or your own SQLite / PostgreSQL database.
 [![CI](https://github.com/abdulhaseebofficial/query-assistant/actions/workflows/ci.yml/badge.svg)](https://github.com/abdulhaseebofficial/query-assistant/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/Flask-3.0-000000?logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
-[![Tests](https://img.shields.io/badge/tests-230%20passing-3fb950)](tests/)
+[![Tests](https://img.shields.io/badge/tests-240%20passing-3fb950)](tests/)
 [![Ruff](https://img.shields.io/badge/lint-ruff-261230?logo=ruff&logoColor=white)](https://docs.astral.sh/ruff/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
@@ -169,12 +169,53 @@ query-assistant/
 │   ├── templates/               # Jinja2 templates (+ partials/)
 │   └── static/css/              # Stylesheets
 │
-├── tests/                    # 230 tests, ~2s, no network — tests/README.md
+├── tests/                    # 240 tests, ~7s, no network — tests/README.md
 ├── data/                     # Runtime data, git-ignored — data/README.md
 ├── docs/screenshots/         # Images used by this README
-├── run.py                    # Entry point
+├── run.py                    # Entry point (local)
+├── api/index.py              # Entry point (serverless) — see Deployment
+├── vercel.json               # Serverless routing + DATA_DIR override
 └── .github/workflows/ci.yml  # Tests, lint, and a real-HTTP smoke check
 ```
+
+## Deployment
+
+The app is a normal Flask process that keeps its data in a SQLite file, so where you run
+it decides what survives a restart.
+
+### Somewhere with a disk (recommended)
+
+Render, Railway, Fly.io, or any VPS. Point the start command at a WSGI server, set
+`SECRET_KEY`, attach a persistent disk mounted wherever `DATA_DIR` points, and everything
+works exactly as it does locally — accounts, saved history and uploaded datasets included.
+
+```bash
+pip install gunicorn
+gunicorn 'backend.app:app' --bind 0.0.0.0:$PORT
+```
+
+### Vercel (demo only)
+
+`vercel.json` and `api/index.py` are already in the repo, so importing it into Vercel
+deploys without further setup. Understand the trade-off first:
+
+Vercel is serverless. The deployment directory is read-only and only `/tmp` is writable,
+which is where `vercel.json` points `DATA_DIR`. `/tmp` doesn't survive a cold start and
+isn't shared between instances, so the demo database is re-seeded on each one and
+**registered accounts, saved query history, and uploaded CSVs last only as long as the
+instance that received them**. `EPHEMERAL_STORAGE=true` is set there so the UI says so
+rather than letting someone sign up for an account that quietly disappears.
+
+Everything that reads from the built-in demo database — which is most of the app — works
+normally. Set these in **Project Settings → Environment Variables**:
+
+| Variable | Why |
+|---|---|
+| `SECRET_KEY` | Without it a new random key is generated per instance, so logins break immediately |
+| `GEMINI_API_KEY` | Optional, and the thing that makes the deployed demo genuinely useful — see [Configuration](#configuration) |
+
+Rate limiting uses in-memory counters, so on any multi-instance host the limits are
+per-instance. Point `Limiter(storage_uri=...)` at Redis if that matters to you.
 
 ## Configuration
 
@@ -197,7 +238,7 @@ and fill in what you need.
 ```bash
 pip install -r requirements.txt -r requirements-dev.txt
 
-pytest              # 230 tests, about six seconds
+pytest              # 240 tests, about seven seconds
 ruff check .        # lint
 ```
 

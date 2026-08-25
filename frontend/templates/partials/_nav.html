@@ -21,6 +21,16 @@
     </div>
 </div>
 
+{% if ephemeral_storage %}
+<div class="demo-banner">
+    <strong>Demo deployment.</strong>
+    Ask anything you like — but accounts, saved history, and uploaded files are stored on a
+    temporary disk here and disappear when the server restarts.
+    <a href="https://github.com/abdulhaseebofficial/query-assistant#deployment">Run it yourself</a>
+    to keep your data.
+</div>
+{% endif %}
+
 <script>
     (function() {
         if (localStorage.getItem('theme') === 'light') {

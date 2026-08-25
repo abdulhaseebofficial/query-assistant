@@ -1,0 +1,12 @@
+# Files that don't need to reach the serverless bundle. Dependencies dominate the
+# size limit, but there's no reason to ship screenshots and test fixtures either.
+docs/
+tests/
+.github/
+data/
+*.md
+!README.md
+.gitattributes
+pyproject.toml
+requirements-dev.txt
+run.py
