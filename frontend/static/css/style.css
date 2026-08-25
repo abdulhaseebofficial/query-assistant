@@ -749,25 +749,30 @@ h1 + .subtitle {
 .topbar-actions {
     display: flex;
     align-items: center;
-    gap: 16px;
+    /* Small, because the links now carry their own padding for a hit area. */
+    gap: 4px;
     flex-wrap: wrap;
 }
 
 .topbar-link {
     font-family: 'Inter', sans-serif;
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--text-soft);
+    font-size: 0.86rem;
+    font-weight: 500;
+    color: var(--text);
     text-decoration: none;
     background: none;
     border: none;
-    padding: 0;
+    border-radius: 8px;
+    /* A real hit area, so these are comfortable to click rather than
+       pixel-hunted, and the hover has something to fill. */
+    padding: 6px 10px;
     cursor: pointer;
-    transition: color 0.15s;
+    transition: color 0.15s, background 0.15s;
 }
 
 .topbar-link:hover {
-    color: var(--accent);
+    color: var(--accent-hover);
+    background: var(--accent-bg);
 }
 
 .topbar-form {
@@ -944,20 +949,43 @@ body,
     display: flex;
     justify-content: center;
     flex-wrap: wrap;
-    gap: 22px;
+    gap: 12px;
     margin-bottom: 34px;
 }
 
+/* These sit directly under the example chips and must not read as more of them:
+   a chip runs a query in place, these go somewhere else. Hence the arrow and the
+   unfilled background — same family, different job. */
 .source-links a {
-    font-size: 0.88rem;
-    color: var(--text-faint);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.86rem;
+    font-weight: 500;
+    color: var(--text-soft);
     text-decoration: none;
-    border-bottom: 1px solid transparent;
-    padding-bottom: 1px;
-    transition: color 0.15s, border-color 0.15s;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 8px 18px;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.source-links a::after {
+    content: "\2192";
+    font-size: 0.95em;
+    color: var(--text-faint);
+    transition: transform 0.15s, color 0.15s;
 }
 
 .source-links a:hover {
-    color: var(--accent-hover);
-    border-bottom-color: var(--accent-bg);
+    color: var(--text);
+    border-color: var(--accent);
+    background: var(--accent-bg);
 }
+
+.source-links a:hover::after {
+    color: var(--accent);
+    transform: translateX(2px);
+}
+
