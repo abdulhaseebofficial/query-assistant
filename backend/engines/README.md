@@ -10,7 +10,7 @@ There are three engines, and they're tried in order until one of them can answer
 |---|---|
 | `ai_engine.py` | Tried **first**. Sends the question to an AI model and asks it to write the SQL. It can use either **Google Gemini** (`GEMINI_API_KEY`) or **Anthropic Claude** (`ANTHROPIC_API_KEY`) — whichever key you've set up. If neither is set, this engine is skipped automatically. Before running anything the AI writes, it double-checks the SQL is safe: it must be a single read-only `SELECT`, and it's only allowed to look at specific tables (so it can never peek at things like saved passwords). |
 | `rule_engine.py` | Used for the **built-in demo database** (departments, employees, products, customers, orders) when the AI engine isn't available. It works by looking for keywords in the question — like "employees", "highest paid", or "kitne" (Urdu for "how many") — and building the matching SQL query from a fixed template. It only answers the phrasings it genuinely knows; see "When it refuses to answer" below. |
-| `csv_engine.py` | Handles CSV files that a user uploads. It reads the file, figures out each column's data type, saves it as a table, and — like `rule_engine.py` — can build a simple keyword-search query if the AI engine isn't available. |
+| `csv_engine.py` | Handles CSV files that a user uploads. It reads the file, figures out each column's data type, saves it as a table, and — like `rule_engine.py` — answers questions about it without the AI engine: searching values, totalling or averaging a numeric column, ranking by one, or counting rows. |
 
 ## Why two ways of answering the same question?
 

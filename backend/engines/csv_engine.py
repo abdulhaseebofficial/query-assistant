@@ -7,6 +7,27 @@ import csv
 import io
 import re
 
+from backend.engines.phrases import (
+    AVG_PHRASES,
+    COUNT_PHRASES,
+    HIGHEST_PHRASES,
+    LOWEST_PHRASES,
+    OVERVIEW_PHRASES,
+    SINGLE_ROW_PHRASES,
+    SUM_PHRASES,
+    all_phrases,
+)
+
+
+def any_phrase(text, phrases):
+    """True when any phrase appears as a whole word (or run of words) in `text`.
+
+    Word boundaries matter: "min" must not match inside "administration", and
+    "max" must not match inside "maximum_capacity".
+    """
+    return any(re.search(r"\b" + re.escape(phrase) + r"\b", text) for phrase in phrases)
+
+
 MAX_ROWS = 5000
 SAMPLE_SIZE = 500
 
@@ -17,7 +38,8 @@ GENERIC_STOPWORDS = {
     "in", "on", "at", "to", "with", "how", "many", "much", "count", "total",
     "number", "dataset", "data", "does", "did", "search", "give", "tell",
     "ka", "ki", "ke", "ko", "mai", "mujhe", "mein", "hai", "chahiye", "de", "do",
-    "kitne", "kitni",
+    "kitne", "kitni", "kitna", "hain", "hein", "hy", "ho", "kya", "kaun", "kon",
+    "dikhao", "dikhayo", "batao", "bataye", "sab", "sara", "saara",
 }
 
 
@@ -181,32 +203,131 @@ def clear_dataset(conn):
     conn.commit()
 
 
-def build_custom_query(user_input, columns, table_name="custom_data", placeholder="?"):
-    text = user_input.strip().lower()
-    words = [w.strip() for w in text.split() if w.strip()]
-    keywords = [w for w in words if w not in GENERIC_STOPWORDS and len(w) > 1]
+def _column_tokens(columns):
+    """Every word that names a column, so it isn't searched for as a *value*.
 
-    is_count = any(
-        re.search(r"\b" + re.escape(phrase) + r"\b", text) is not None
-        for phrase in ("how many", "count", "kitne", "kitni", "number of")
-    )
+    Headers are sanitised to snake_case, so "Units Sold" arrives as `units_sold`
+    while the question says "units sold". Both the whole name and its parts count.
+    """
+    tokens = set()
+    for column in columns:
+        tokens.add(column.lower())
+        tokens.update(part for part in column.lower().split("_") if len(part) > 1)
+    return tokens
+
+
+def _names_a_column(word, column_tokens):
+    """Whether `word` is the name of a column rather than a value to search for.
+
+    Plurals are tolerated in both directions, including the -ies form: a column
+    headed "Product" is asked about as "products" at least as often as "product",
+    and "City" is asked about as "cities".
+    """
+    candidates = {word, word + "s", word.rstrip("s")}
+    if word.endswith("ies"):
+        candidates.add(word[:-3] + "y")
+    if word.endswith("y"):
+        candidates.add(word[:-1] + "ies")
+    return bool(candidates & column_tokens)
+
+
+def _numeric_column(columns, types, text):
+    """The numeric column the question names, if it names one."""
+    if not types:
+        return None
+    for column, sql_type in zip(columns, types, strict=True):
+        if sql_type not in ("INTEGER", "REAL"):
+            continue
+        if column.lower() in text or column.lower().replace("_", " ") in text:
+            return column
+    return None
+
+
+def build_custom_query(user_input, columns, table_name="custom_data", placeholder="?", types=None):
+    """Turn a question about an uploaded table into SQL.
+
+    Three shapes, in order of how specific the question is: an aggregate over a named
+    numeric column, a ranking by one, or a keyword search across every column.
+
+    A word that names a column is dropped from the search terms rather than looked for
+    in the data. Without that, "revenue kitna hai" searched every cell for the text
+    "revenue", found none, and reported "Lists matching rows" with nothing under it —
+    which reads as "your data is empty" rather than "I misunderstood".
+    """
+    text = user_input.strip().lower()
+
+    # Strip the words that say *what kind* of answer is wanted before looking for the
+    # words that say *which rows*. Without this, "average revenue" searched every cell
+    # for the text "average", matched nothing, and averaged an empty set to null.
+    residue = text
+    for phrase in all_phrases():
+        residue = residue.replace(phrase, " ")
+
+    column_tokens = _column_tokens(columns)
+    keywords = [
+        word for word in residue.split()
+        if word not in GENERIC_STOPWORDS
+        and not _names_a_column(word, column_tokens)
+        and len(word) > 1
+    ]
+
+    # "sab dikhao" asks for the table, not for rows containing the word "sab".
+    if any_phrase(text, OVERVIEW_PHRASES):
+        keywords = []
+
+    table_sql = f'"{table_name}"'
+    cols_sql = ", ".join(f'"{c}"' for c in columns)
 
     conditions = []
     params = []
-    for kw in keywords:
+    for keyword in keywords:
         col_conditions = " OR ".join(f'CAST("{c}" AS TEXT) LIKE {placeholder}' for c in columns)
         conditions.append(f"({col_conditions})")
-        params.extend([f"%{kw}%"] * len(columns))
-
+        params.extend([f"%{keyword}%"] * len(columns))
     where_clause = f" WHERE {' AND '.join(conditions)}" if conditions else ""
-    table_sql = f'"{table_name}"'
 
-    if is_count:
+    numeric = _numeric_column(columns, types, text)
+    label = numeric.replace("_", " ") if numeric else ""
+
+    # A ranking by a named numeric column: "highest revenue", "sabse kam price".
+    # Checked before the aggregates because it's the more specific reading — "highest
+    # revenue" names a row, "total revenue" names a number.
+    if numeric:
+        limit = 1 if any_phrase(text, SINGLE_ROW_PHRASES) else 5
+        row_word = "row" if limit == 1 else f"{limit} rows"
+        if any_phrase(text, HIGHEST_PHRASES):
+            sql = f'SELECT {cols_sql} FROM {table_sql}{where_clause} ORDER BY "{numeric}" DESC LIMIT {limit};'
+            return sql, params, f"The {row_word} with the highest {label}.", False
+        if any_phrase(text, LOWEST_PHRASES):
+            sql = f'SELECT {cols_sql} FROM {table_sql}{where_clause} ORDER BY "{numeric}" ASC LIMIT {limit};'
+            return sql, params, f"The {row_word} with the lowest {label}.", False
+
+    # An aggregate over a named numeric column: "total revenue", "average price".
+    if numeric:
+        if any_phrase(text, AVG_PHRASES):
+            sql = f'SELECT AVG("{numeric}") AS average FROM {table_sql}{where_clause};'
+            return sql, params, f"Calculates the average {label}.", True
+        if any_phrase(text, SUM_PHRASES):
+            sql = f'SELECT SUM("{numeric}") AS total FROM {table_sql}{where_clause};'
+            return sql, params, f"Adds up the total {label}.", True
+
+    if any_phrase(text, COUNT_PHRASES):
+        # "revenue kitna hai" asks how *much*, not how many — the same distinction
+        # rule_engine draws, and it turns on whether the question named an amount.
+        if numeric:
+            sql = f'SELECT SUM("{numeric}") AS total FROM {table_sql}{where_clause};'
+            return sql, params, f"Adds up the total {label}.", True
+
         sql = f"SELECT COUNT(*) AS count FROM {table_sql}{where_clause};"
-        explanation = "Counts how many rows match the search terms."
-    else:
-        cols_sql = ", ".join(f'"{c}"' for c in columns)
-        sql = f"SELECT {cols_sql} FROM {table_sql}{where_clause} LIMIT 200;"
-        explanation = "Lists matching rows (showing up to 200)."
+        explanation = (
+            "Counts how many rows match the search terms." if keywords
+            else "Counts how many rows the dataset has."
+        )
+        return sql, params, explanation, True
 
-    return sql, params, explanation, is_count
+    sql = f"SELECT {cols_sql} FROM {table_sql}{where_clause} LIMIT 200;"
+    explanation = (
+        "Lists matching rows (showing up to 200)." if keywords
+        else "Lists every row in the dataset (showing up to 200)."
+    )
+    return sql, params, explanation, False

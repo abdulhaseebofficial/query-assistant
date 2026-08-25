@@ -1,6 +1,6 @@
 # tests/
 
-The automated checks that run on every push and pull request. 352 tests, about six seconds,
+The automated checks that run on every push and pull request. 382 tests, about six seconds,
 no network access and no API key required.
 
 ```bash
@@ -49,6 +49,12 @@ routes every path to the one function, that `DATA_DIR` moves every written path 
 writable, and that importing `api/index.py` into an empty directory seeds the database and
 serves a real answer. The cold-start tests run in a subprocess because `config.py` reads
 the environment once at import.
+
+**`test_csv_questions.py`** — the same questions, asked about an uploaded spreadsheet
+instead of the demo schema. csv_engine knows only the column names and their types, and it
+was answering from even less than that: "sab dikhao" and "highest revenue" both searched
+the *values* for words that were never values, returned nothing, and said "Lists matching
+rows" — which reads as "your data is empty".
 
 **`test_roman_urdu.py`** — questions asked the way they're actually asked here, in
 Roman Urdu or mixed with English. Every case in it was found by asking the running app a

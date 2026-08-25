@@ -362,7 +362,7 @@ def run_custom_query(user_input, meta):
             return [dict(row) for row in conn.execute(sql, params).fetchall()]
 
         def fallback_fn():
-            return build_custom_query(user_input, meta["columns"])
+            return build_custom_query(user_input, meta["columns"], types=meta["types"])
 
         outcome = _run_with_ai_fallback(
             execute_fn, user_input, schema_desc, "custom_data", db.DIALECT, fallback_fn
@@ -406,7 +406,9 @@ def run_connected_query(source, placeholder, kind, table, user_input):
             return fetch_rows(conn, sql, params)
 
         def fallback_fn():
-            return build_custom_query(user_input, table["columns"], table["name"], placeholder)
+            return build_custom_query(
+                user_input, table["columns"], table["name"], placeholder, types=table["types"]
+            )
 
         outcome = _run_with_ai_fallback(
             execute_fn, user_input, schema_desc, table["name"], kind, fallback_fn

@@ -8,6 +8,15 @@ structure itself, which makes this engine inherently injection-safe.
 import re
 
 from backend import db
+from backend.engines.phrases import (
+    AVG_PHRASES,
+    COUNT_PHRASES,
+    MONEY_WORDS,
+    OVERVIEW_PHRASES,
+    SINGLE_ROW_PHRASES,
+    SUM_NOUNS,
+    SUM_PHRASES,
+)
 
 # Roman Urdu sits alongside English here rather than in a separate lookup, because
 # real questions mix the two freely ("IT walay employees", "sare products dikhao").
@@ -29,16 +38,6 @@ ORDER_WORDS = {
     "order", "orders", "sale", "sales", "revenue", "purchase", "purchases",
     "transaction", "transactions", "bikri", "farokht", "aamdani",
 }
-
-COUNT_PHRASES = ("how many", "count", "kitne", "kitni", "kitna", "number of")
-SUM_PHRASES = ("total", "sum", "kul", "revenue", "aamdani")
-AVG_PHRASES = ("average", "avg", "mean", "ausat")
-
-# "total kitni sales hui" contains both a sum word and a count word. Which one is
-# meant depends on the noun: you total an amount, you count a thing. Without this,
-# COUNT_PHRASES matched first and the answer was the count of orders under an
-# explanation that said so — right about what it did, wrong about what was asked.
-MONEY_WORDS = ("revenue", "sales", "salary", "salaries", "amount", "price", "aamdani", "tankhwah", "bikri")
 
 STATUS_WORDS = {
     "completed": "Completed", "complete": "Completed",
@@ -82,18 +81,12 @@ DATE_PHRASES = (
     "pichle mahine", "pichhle mahine", "is saal", "is sal",
 )
 
-# Someone asking for exactly one row, in either language. See wants_single_row.
-SINGLE_ROW_PHRASES = (
-    "sirf aik", "sirf ek", "sirf 1", "srif aik", "srif ek",
-    "only one", "only 1", "just one", "just 1", "top 1", "number 1",
-    "aik hi", "ek hi", "single", "one only",
-)
-
 # Everything above, plus the aggregate and status words — what a question may contain
 # without the engine having to admit it's guessing.
 RECOGNISED_PHRASES = (
     COUNT_PHRASES
     + SUM_PHRASES
+    + SUM_NOUNS
     + AVG_PHRASES
     + tuple(STATUS_WORDS)
     + TOP_PAID_PHRASES
@@ -177,18 +170,6 @@ SINGULAR_HINTS = ("person", "who is", "who has", "kaun", "kis ki", "kis ka", "ko
 PLURAL_WORDS = ("employees", "people", "persons", "staff", "workers", "products", "items", "list")
 
 
-# "mujha sara data dikhayo company ka" is a fair question, and it was being told the
-# database can't answer it — which is untrue and unhelpful. There's no single query
-# behind "everything" (five tables, no sensible join), so the honest reply is to ask
-# which part, not to pretend the question was nonsense.
-OVERVIEW_PHRASES = (
-    "sara data", "saara data", "sab data", "sab kuch", "sabkuch", "poora data", "pura data",
-    "all the data", "all data", "everything", "the database", "whole database",
-    "entire database", "data dikhao", "data dikhayo", "company ka data", "company data",
-    "show me the data", "sari information", "saari maloomat",
-)
-
-
 def wants_overview(text):
     """True when the question asks for the whole database rather than one part of it."""
     return any(phrase in text for phrase in OVERVIEW_PHRASES)
@@ -235,7 +216,7 @@ def detect_domain(text):
 
 def detect_aggregate(text):
     counting = any_word_in(COUNT_PHRASES, text)
-    summing = any_word_in(SUM_PHRASES, text)
+    summing = any_word_in(SUM_PHRASES, text) or any_word_in(SUM_NOUNS, text)
 
     if any_word_in(AVG_PHRASES, text):
         return "avg"
