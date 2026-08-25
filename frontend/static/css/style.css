@@ -954,12 +954,11 @@ body,
 }
 
 /* These sit directly under the example chips and must not read as more of them:
-   a chip runs a query in place, these go somewhere else. Hence the arrow and the
-   unfilled background — same family, different job. */
+   a chip runs a query in place, these go somewhere else. Hence the unfilled
+   background — same family, different job. */
 .source-links a {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
     font-size: 0.86rem;
     font-weight: 500;
     color: var(--text-soft);
@@ -971,21 +970,10 @@ body,
     transition: color 0.15s, border-color 0.15s, background 0.15s;
 }
 
-.source-links a::after {
-    content: "\2192";
-    font-size: 0.95em;
-    color: var(--text-faint);
-    transition: transform 0.15s, color 0.15s;
-}
 
 .source-links a:hover {
     color: var(--text);
     border-color: var(--accent);
     background: var(--accent-bg);
-}
-
-.source-links a:hover::after {
-    color: var(--accent);
-    transform: translateX(2px);
 }
 

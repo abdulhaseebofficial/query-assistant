@@ -13,8 +13,30 @@
     <div class="frame">
         <div class="container">
             <header>
-                <h1>Ask your data a question</h1>
+                <h1 id="greeting"
+                    data-phrases='{{ greeting_by_hour|tojson }}'
+                    data-name="{{ greeting_name or '' }}">{{ greeting }}</h1>
             </header>
+            <script>
+                /* The server rendered the greeting from its own clock, which is not
+                   the reader's — a deployment sits in UTC while the reader does not.
+                   Re-pick it from the browser's hour, using the phrases the server
+                   sent so the wording is never written twice. */
+                (function () {
+                    var el = document.getElementById('greeting');
+                    if (!el) return;
+                    try {
+                        var phrases = JSON.parse(el.dataset.phrases);
+                        var phrase = phrases[new Date().getHours()];
+                        var name = el.dataset.name;
+                        el.textContent = (name && phrase.slice(-1) !== '?')
+                            ? phrase + ', ' + name
+                            : phrase;
+                    } catch (e) {
+                        /* Leave the server's greeting in place. */
+                    }
+                })();
+            </script>
 
             <form action="/" method="GET" class="search-form">
                 <input

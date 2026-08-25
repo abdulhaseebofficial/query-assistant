@@ -9,6 +9,7 @@ export. See README.md for the request flow and the production checklist.
 import os
 import re
 import secrets
+from datetime import datetime
 
 from flask import Flask, Response, redirect, render_template, request, url_for
 from flask_limiter import Limiter
@@ -17,7 +18,7 @@ from flask_login import LoginManager, current_user, login_required, login_user, 
 from flask_wtf import CSRFProtect
 from markupsafe import escape
 
-from backend import auth, db
+from backend import auth, db, greeting
 from backend.config import STATIC_DIR, TEMPLATE_DIR
 from backend.connectors import postgres_connector, sqlite_connector
 from backend.content.learn_content import CONCEPTS, FAQS
@@ -282,12 +283,16 @@ def index():
             if current_user.is_authenticated:
                 auth.record_query(current_user.id, "/", user_input, outcome["sql"], outcome["engine"])
 
+    name = current_user.username if current_user.is_authenticated else None
     return render_template(
         "index.html",
         query=user_input,
         searched=bool(user_input),
         result=result,
         examples=EXAMPLE_QUERIES,
+        greeting=greeting.greet(datetime.now().hour, name),
+        greeting_by_hour=greeting.phrases_by_hour(),
+        greeting_name=name,
     )
 
 
