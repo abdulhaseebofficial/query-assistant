@@ -1,0 +1,29 @@
+[project]
+name = "query-assistant"
+version = "1.0.0"
+description = "Ask questions about your data in plain English or Roman Urdu, and get back SQL, a table, and a chart."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [{ name = "Abdul Haseeb" }]
+keywords = ["sql", "flask", "natural-language", "text-to-sql", "sqlite", "postgresql", "claude"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "C4"]
+ignore = [
+    # conftest.py has to extend sys.path before it can import the app package.
+    "E402",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# learn_content.py is prose, not code: its long lines are sentences shown to
+# the user on the Learn SQL page, and wrapping them would only add noise.
+"backend/content/learn_content.py" = ["E501"]

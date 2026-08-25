@@ -96,7 +96,7 @@ def load_csv(file_stream, conn, dataset_name="dataset"):
     try:
         header = next(reader)
     except StopIteration:
-        raise ValueError("The file appears to be empty.")
+        raise ValueError("The file appears to be empty.") from None
 
     header = [h for h in header if h is not None]
     if not header:
@@ -125,12 +125,12 @@ def load_csv(file_stream, conn, dataset_name="dataset"):
     cur.execute("DROP TABLE IF EXISTS custom_data")
     cur.execute("DROP TABLE IF EXISTS custom_meta")
 
-    columns_sql = ", ".join(f'"{name}" {sql_type}' for name, sql_type in zip(columns, types))
+    columns_sql = ", ".join(f'"{name}" {sql_type}' for name, sql_type in zip(columns, types, strict=True))
     cur.execute(f"CREATE TABLE custom_data ({columns_sql})")
 
     placeholders = ", ".join("?" for _ in columns)
     converted_rows = [
-        [convert_value(v, t) for v, t in zip(row, types)]
+        [convert_value(v, t) for v, t in zip(row, types, strict=True)]
         for row in rows
     ]
     cur.executemany(f"INSERT INTO custom_data VALUES ({placeholders})", converted_rows)
@@ -143,7 +143,7 @@ def load_csv(file_stream, conn, dataset_name="dataset"):
         "INSERT INTO custom_meta VALUES (?, ?, ?, ?, ?)",
         [
             (dataset_name, col, label, t, i)
-            for i, (col, label, t) in enumerate(zip(columns, header, types))
+            for i, (col, label, t) in enumerate(zip(columns, header, types, strict=True))
         ],
     )
 

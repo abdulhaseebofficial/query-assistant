@@ -325,7 +325,7 @@ def run_custom_query(user_input, meta):
     finally:
         conn.close()
 
-    outcome["label_map"] = dict(zip(meta["columns"], meta["labels"]))
+    outcome["label_map"] = dict(zip(meta["columns"], meta["labels"], strict=True))
     outcome["chart"] = chart_utils.build_chart_data(
         outcome["columns"], outcome["rows"], outcome.pop("chart_hint")
     )

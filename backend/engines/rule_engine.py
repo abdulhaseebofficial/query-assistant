@@ -112,7 +112,10 @@ def build_employees_query(text, aggregate, ref):
         sql = f"SELECT SUM(e.salary) AS total FROM employees e JOIN departments d ON e.department_id = d.id{where_sql};"
         explanation = f"Adds up the total salary of employees{explanation_filter or ' at the company'}."
     elif aggregate == "avg" and "salary" in text:
-        sql = f"SELECT AVG(e.salary) AS average FROM employees e JOIN departments d ON e.department_id = d.id{where_sql};"
+        sql = (
+            "SELECT AVG(e.salary) AS average FROM employees e "
+            f"JOIN departments d ON e.department_id = d.id{where_sql};"
+        )
         explanation = f"Calculates the average salary of employees{explanation_filter or ' at the company'}."
     else:
         order_sql = " ORDER BY e.name"

@@ -40,7 +40,7 @@ def _connect(dsn):
     try:
         return psycopg2.connect(dsn, cursor_factory=psycopg2.extras.RealDictCursor, connect_timeout=8)
     except psycopg2.OperationalError as exc:
-        raise ValueError(_friendly_connection_error(exc))
+        raise ValueError(_friendly_connection_error(exc)) from exc
 
 
 def _list_tables_with(conn):
@@ -98,7 +98,7 @@ def save_connection(dsn):
 def get_connection():
     if not is_connected():
         return None
-    with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+    with open(CONFIG_PATH, encoding="utf-8") as f:
         config = json.load(f)
     return _connect(config["dsn"])
 

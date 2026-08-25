@@ -84,7 +84,7 @@ def _get_client():
 
 def build_schema_description(columns, types=None, table_name="data"):
     if types:
-        cols = ", ".join(f"{c} ({t})" for c, t in zip(columns, types))
+        cols = ", ".join(f"{c} ({t})" for c, t in zip(columns, types, strict=True))
     else:
         cols = ", ".join(columns)
     return f"{table_name}({cols})"
