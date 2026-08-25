@@ -1,0 +1,65 @@
+name: Bug report
+description: Something behaves differently than you expected.
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you expect, and what did you get instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Start the app with `python run.py`
+        2. Ask "..."
+        3. See the error
+    validations:
+      required: true
+
+  - type: input
+    id: question
+    attributes:
+      label: The question you asked
+      description: The exact text you typed into the search box, if the bug involves a query.
+      placeholder: employees in the IT department
+
+  - type: dropdown
+    id: data-source
+    attributes:
+      label: Which data source were you using?
+      options:
+        - Built-in demo database
+        - Uploaded CSV
+        - Connected SQLite file
+        - Connected PostgreSQL database
+    validations:
+      required: true
+
+  - type: dropdown
+    id: engine
+    attributes:
+      label: Was ANTHROPIC_API_KEY set?
+      description: This decides whether the AI engine or the rule-based engine handled the query.
+      options:
+        - "No - rule-based engine"
+        - "Yes - AI engine"
+        - Not sure
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Python version
+      placeholder: "3.12.4"
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Traceback or console output
+      render: shell
