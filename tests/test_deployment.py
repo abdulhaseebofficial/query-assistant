@@ -31,10 +31,6 @@ class TestVercelConfig:
         """The deployment directory is read-only; only /tmp can be written."""
         assert vercel_config["env"]["DATA_DIR"].startswith("/tmp/")
 
-    def test_the_deployment_declares_its_storage_temporary(self, vercel_config):
-        """This is what puts the notice in the UI before anyone registers."""
-        assert vercel_config["env"]["EPHEMERAL_STORAGE"] == "true"
-
     def test_the_entry_point_exists_where_the_rewrite_points(self):
         assert (PROJECT_ROOT / "api" / "index.py").is_file()
 
@@ -69,7 +65,6 @@ class TestColdStart:
             env = {
                 **os.environ,
                 "DATA_DIR": tmp_dir,
-                "EPHEMERAL_STORAGE": "true",
                 "SECRET_KEY": "cold-start-test",
                 "PYTHONPATH": str(PROJECT_ROOT),
                 "PYTHONIOENCODING": "utf-8",
@@ -109,22 +104,9 @@ class TestColdStart:
             "m.app.config.update(TESTING=True);"
             "r = m.app.test_client().get('/?q=highest+paid+employees');"
             "body = r.get_data(as_text=True);"
-            "print(r.status_code, 'Fatima Sheikh' in body, 'Temporary storage.' in body)"
+            "print(r.status_code, 'Fatima Sheikh' in body)"
         )
 
         assert result.returncode == 0, result.stderr
-        assert "200 True True" in result.stdout, result.stdout
+        assert "200 True" in result.stdout, result.stdout
 
-
-class TestEphemeralNotice:
-    def test_the_notice_is_absent_on_a_normal_deployment(self, client):
-        assert "Temporary storage." not in client.get("/").get_data(as_text=True)
-
-    def test_the_notice_appears_when_storage_is_declared_temporary(self, client, monkeypatch):
-        """Someone about to register an account needs to know it won't survive."""
-        import backend.app as bapp
-
-        monkeypatch.setattr(bapp, "EPHEMERAL_STORAGE", True)
-        body = client.get("/register").get_data(as_text=True)
-
-        assert "Temporary storage." in body

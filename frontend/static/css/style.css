@@ -459,25 +459,6 @@ h1 {
     margin: 4px 3px 0;
 }
 
-/* Shown only where the deployment has told us its disk is temporary. Sits
-   directly under the nav so it's read before anyone signs up. */
-.demo-banner {
-    background: var(--accent-bg);
-    border-bottom: 1px solid var(--border);
-    color: var(--text-soft);
-    font-size: 0.88rem;
-    line-height: 1.6;
-    padding: 10px 24px;
-    text-align: center;
-}
-
-.demo-banner strong {
-    color: var(--text);
-}
-
-.demo-banner a {
-    color: var(--accent-hover);
-}
 
 .sql-box {
     background: var(--code-bg);

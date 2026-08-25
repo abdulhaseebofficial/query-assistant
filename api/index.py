@@ -14,8 +14,7 @@ than by anything special in this file:
    somewhere data can live. That's what DATABASE_URL is for: set it and accounts,
    query history, the demo tables and uploaded CSVs all live in PostgreSQL instead,
    and the deployment behaves like any other. Leave it unset and the app still runs,
-   but everything resets on each cold start and the UI says so — see
-   EPHEMERAL_STORAGE in backend/config.py.
+   but everything resets on each cold start.
 
 init_db() runs here rather than in a request because a cold start may be the first
 time this database has been seen. It is idempotent, so a warm instance pays nothing

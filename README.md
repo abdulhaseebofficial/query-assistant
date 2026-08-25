@@ -11,7 +11,7 @@ database, a CSV you upload, or your own SQLite / PostgreSQL database.
 [![CI](https://github.com/abdulhaseebofficial/query-assistant/actions/workflows/ci.yml/badge.svg)](https://github.com/abdulhaseebofficial/query-assistant/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/Flask-3.0-000000?logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
-[![Tests](https://img.shields.io/badge/tests-273%20passing-3fb950)](tests/)
+[![Tests](https://img.shields.io/badge/tests-270%20passing-3fb950)](tests/)
 [![Ruff](https://img.shields.io/badge/lint-ruff-261230?logo=ruff&logoColor=white)](https://docs.astral.sh/ruff/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
@@ -169,7 +169,7 @@ query-assistant/
 │   ├── templates/               # Jinja2 templates (+ partials/)
 │   └── static/css/              # Stylesheets
 │
-├── tests/                    # 273 tests, ~5s, no network — tests/README.md
+├── tests/                    # 270 tests, ~5s, no network — tests/README.md
 ├── data/                     # Runtime data, git-ignored — data/README.md
 ├── docs/screenshots/         # Images used by this README
 ├── backend/db.py             # SQLite / PostgreSQL dialect layer
@@ -208,9 +208,6 @@ A free PostgreSQL database takes about two minutes:
 
 The schema is created on first boot, so there's no migration step. A custom domain works
 normally once this is set — **Project Settings → Domains**.
-
-Until `DATABASE_URL` is set, the app puts a banner on every page saying its data is
-temporary; adding the variable removes it automatically.
 
 One thing stays temporary on Vercel regardless: an external database attached through
 **Connect a Database** is written to `/tmp`, so that connection is lost on a restart.
@@ -255,7 +252,7 @@ and fill in what you need.
 ```bash
 pip install -r requirements.txt -r requirements-dev.txt
 
-pytest              # 273 tests, about five seconds
+pytest              # 270 tests, about five seconds
 ruff check .        # lint
 ```
 

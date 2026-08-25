@@ -21,15 +21,6 @@
     </div>
 </div>
 
-{% if ephemeral_storage %}
-<div class="demo-banner">
-    <strong>Temporary storage.</strong>
-    Questions work normally, but accounts, saved history, and uploaded files sit on a disk that
-    resets when the server restarts. Set <code>DATABASE_URL</code> to keep them —
-    <a href="https://github.com/abdulhaseebofficial/query-assistant#deployment">how to do that</a>.
-</div>
-{% endif %}
-
 <script>
     (function() {
         if (localStorage.getItem('theme') === 'light') {
