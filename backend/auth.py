@@ -1,10 +1,9 @@
 """User accounts: registration, login verification, and per-user query history."""
 
-import sqlite3
-
 from flask_login import UserMixin
 from werkzeug.security import check_password_hash, generate_password_hash
 
+from backend import db
 from backend.database import DB_NAME
 
 # A precomputed dummy hash, used to keep verify_password()'s runtime the same
@@ -22,9 +21,7 @@ class User(UserMixin):
 
 
 def _connect():
-    conn = sqlite3.connect(DB_NAME)
-    conn.row_factory = sqlite3.Row
-    return conn
+    return db.connect(DB_NAME)
 
 
 def _row_to_user(row):
@@ -75,12 +72,13 @@ def create_user(username, email, password):
         if existing:
             raise ValueError("That username or email is already taken.")
 
-        cur = conn.execute(
+        user_id = db.insert_returning_id(
+            conn,
             "INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)",
             (username, email, generate_password_hash(password)),
         )
         conn.commit()
-        return _row_to_user({"id": cur.lastrowid, "username": username, "email": email})
+        return _row_to_user({"id": user_id, "username": username, "email": email})
     finally:
         conn.close()
 

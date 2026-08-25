@@ -9,7 +9,6 @@ export. See README.md for the request flow and the production checklist.
 import os
 import re
 import secrets
-import sqlite3
 
 from flask import Flask, Response, redirect, render_template, request, url_for
 from flask_limiter import Limiter
@@ -18,7 +17,7 @@ from flask_login import LoginManager, current_user, login_required, login_user, 
 from flask_wtf import CSRFProtect
 from markupsafe import escape
 
-from backend import auth
+from backend import auth, db
 from backend.config import EPHEMERAL_STORAGE, STATIC_DIR, TEMPLATE_DIR
 from backend.connectors import postgres_connector, sqlite_connector
 from backend.content.learn_content import CONCEPTS, FAQS
@@ -127,9 +126,7 @@ KEYWORD_PATTERN = re.compile(r"\b(" + "|".join(re.escape(k) for k in SQL_KEYWORD
 
 
 def get_connection():
-    conn = sqlite3.connect(DB_NAME)
-    conn.row_factory = sqlite3.Row
-    return conn
+    return db.connect(DB_NAME)
 
 
 def describe_failure(user_input):
@@ -265,7 +262,7 @@ def run_query(user_input):
             )
 
         outcome = _run_with_ai_fallback(
-            execute_fn, user_input, ai_engine.BUILTIN_SCHEMA, None, "SQLite", fallback_fn
+            execute_fn, user_input, ai_engine.BUILTIN_SCHEMA, None, db.DIALECT, fallback_fn
         )
         if outcome is None:
             return None
@@ -377,7 +374,7 @@ def run_custom_query(user_input, meta):
             return build_custom_query(user_input, meta["columns"])
 
         outcome = _run_with_ai_fallback(
-            execute_fn, user_input, schema_desc, "custom_data", "SQLite", fallback_fn
+            execute_fn, user_input, schema_desc, "custom_data", db.DIALECT, fallback_fn
         )
     finally:
         conn.close()

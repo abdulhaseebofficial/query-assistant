@@ -26,9 +26,15 @@ DB_PATH = os.path.join(DATA_DIR, "company.db")
 CONNECTED_DB_PATH = os.path.join(UPLOAD_DIR, "connected.db")
 POSTGRES_CONFIG_PATH = os.path.join(UPLOAD_DIR, "postgres_connection.json")
 
-# True when the app is running somewhere its data doesn't survive a restart, so
-# the UI can say so rather than let someone register an account that silently
-# disappears. Set by the deployment, not inferred.
-EPHEMERAL_STORAGE = os.environ.get("EPHEMERAL_STORAGE", "").strip().lower() in ("1", "true", "yes")
+# True only when the app's data genuinely doesn't survive a restart, so the UI can
+# say so rather than let someone register an account that silently disappears.
+#
+# Two things have to be true for that: the deployment has declared its disk
+# temporary (serverless /tmp), *and* there's no external database holding the data
+# instead. Combining them here means a deployment that adds DATABASE_URL stops
+# showing the warning on its own, rather than needing a second variable flipped and
+# lying to its users until someone remembers.
+_DECLARED_TEMPORARY = os.environ.get("EPHEMERAL_STORAGE", "").strip().lower() in ("1", "true", "yes")
+EPHEMERAL_STORAGE = _DECLARED_TEMPORARY and not os.environ.get("DATABASE_URL", "").strip()
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)

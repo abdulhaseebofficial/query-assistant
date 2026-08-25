@@ -4,3 +4,7 @@
 
 pytest>=8.0
 ruff>=0.6
+
+# Parses the SQL the app generates so the PostgreSQL dialect can be checked
+# without a PostgreSQL server (see tests/test_postgres_dialect.py).
+sqlglot>=25.0

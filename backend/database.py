@@ -1,13 +1,17 @@
-"""Schema and seed data for the built-in demo database (data/company.db).
+"""Schema and seed data for the app's database.
+
+Runs against SQLite or PostgreSQL depending on DATABASE_URL — see backend/db.py.
+The schema is one shared definition; only the identity-column syntax and the
+order_date type differ, and both come from db.py rather than being branched here.
 
 init_db() is idempotent — it creates tables if missing and only inserts the
-sample rows the first time (when `departments` is empty), so it's safe to
-call on every app startup.
+sample rows the first time (when `departments` is empty), so it's safe to call on
+every app startup, which is what a serverless cold start relies on.
 """
 
-import sqlite3
 from datetime import date, timedelta
 
+from backend import db
 from backend.config import DB_PATH
 
 DB_NAME = DB_PATH
@@ -102,20 +106,20 @@ ORDERS = [
 ]
 
 
-def init_db():
-    conn = sqlite3.connect(DB_NAME)
-    cur = conn.cursor()
+# order_date is compared with date functions, so PostgreSQL should store it as a real
+# DATE; SQLite has no date type and has always kept it as TEXT.
+_DATE_TYPE = "DATE" if db.IS_POSTGRES else "TEXT"
 
-    cur.executescript("""
+SCHEMA = f"""
         CREATE TABLE IF NOT EXISTS departments (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            {db.IDENTITY_PK},
             name TEXT NOT NULL,
             location TEXT NOT NULL,
             manager_name TEXT NOT NULL
         );
 
         CREATE TABLE IF NOT EXISTS employees (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            {db.IDENTITY_PK},
             name TEXT NOT NULL,
             department_id INTEGER NOT NULL REFERENCES departments(id),
             position TEXT NOT NULL,
@@ -125,7 +129,7 @@ def init_db():
         );
 
         CREATE TABLE IF NOT EXISTS products (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            {db.IDENTITY_PK},
             name TEXT NOT NULL,
             category TEXT NOT NULL,
             price REAL NOT NULL,
@@ -133,7 +137,7 @@ def init_db():
         );
 
         CREATE TABLE IF NOT EXISTS customers (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            {db.IDENTITY_PK},
             name TEXT NOT NULL,
             email TEXT NOT NULL,
             city TEXT NOT NULL,
@@ -141,17 +145,17 @@ def init_db():
         );
 
         CREATE TABLE IF NOT EXISTS orders (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            {db.IDENTITY_PK},
             customer_id INTEGER NOT NULL REFERENCES customers(id),
             product_id INTEGER NOT NULL REFERENCES products(id),
             quantity INTEGER NOT NULL,
-            order_date TEXT NOT NULL,
+            order_date {_DATE_TYPE} NOT NULL,
             total_amount REAL NOT NULL,
             status TEXT NOT NULL
         );
 
         CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            {db.IDENTITY_PK},
             username TEXT NOT NULL UNIQUE,
             email TEXT NOT NULL UNIQUE,
             password_hash TEXT NOT NULL,
@@ -159,7 +163,7 @@ def init_db():
         );
 
         CREATE TABLE IF NOT EXISTS query_history (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            {db.IDENTITY_PK},
             user_id INTEGER NOT NULL REFERENCES users(id),
             source TEXT NOT NULL,
             query_text TEXT NOT NULL,
@@ -167,7 +171,18 @@ def init_db():
             engine TEXT NOT NULL,
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
-    """)
+"""
+
+
+def init_db():
+    conn = db.connect(DB_NAME)
+    cur = conn.cursor()
+
+    # executescript is SQLite-only, and psycopg2 is happy to run several statements in
+    # one execute, so splitting on the statement separator works for both.
+    for statement in SCHEMA.split(";"):
+        if statement.strip():
+            cur.execute(statement)
 
     cur.execute("SELECT COUNT(*) FROM departments")
     if cur.fetchone()[0] == 0:

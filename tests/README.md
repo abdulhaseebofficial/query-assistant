@@ -1,6 +1,6 @@
 # tests/
 
-The automated checks that run on every push and pull request. 240 tests, about seven seconds,
+The automated checks that run on every push and pull request. 269 tests, about five seconds,
 no network access and no API key required.
 
 ```bash
@@ -35,6 +35,13 @@ through the database.
 
 **`test_chart_utils.py`** — when a result set is worth drawing and when it isn't. Notably:
 `id` columns are numeric but plotting them is meaningless, and a single row is not a chart.
+
+**`test_postgres_dialect.py`** — the app runs on SQLite locally and PostgreSQL when
+`DATABASE_URL` is set, and there's no PostgreSQL server in CI. So these build the SQL the
+app would actually send and parse it with sqlglot's PostgreSQL dialect, which catches what
+dialect bugs really look like: an identity column in SQLite's syntax, a `strftime` that
+doesn't exist in PostgreSQL, a `?` where `%s` belongs. Each of those would otherwise only
+show up as a 500 on the deployment.
 
 **`test_deployment.py`** — the serverless setup. Vercel's deployment directory is
 read-only and its `/tmp` is wiped between cold starts, so these check that `vercel.json`

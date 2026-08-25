@@ -7,6 +7,8 @@ structure itself, which makes this engine inherently injection-safe.
 
 import re
 
+from backend import db
+
 EMPLOYEE_WORDS = {
     "employee", "employees", "staff", "worker", "workers", "mulazim", "karyakar",
     "salary", "salaries", "paid", "hired", "position",
@@ -313,16 +315,16 @@ def build_orders_query(text, aggregate, ref):
         explanation_parts.append(f"with status {status}")
 
     if date_filter == "today":
-        conditions.append("DATE(o.order_date) = DATE('now')")
+        conditions.append(db.DATE_FILTERS["today"])
         explanation_parts.append("placed today")
     elif date_filter == "this_month":
-        conditions.append("strftime('%Y-%m', o.order_date) = strftime('%Y-%m', 'now')")
+        conditions.append(db.DATE_FILTERS["this_month"])
         explanation_parts.append("placed this month")
     elif date_filter == "last_month":
-        conditions.append("strftime('%Y-%m', o.order_date) = strftime('%Y-%m', 'now', '-1 month')")
+        conditions.append(db.DATE_FILTERS["last_month"])
         explanation_parts.append("placed last month")
     elif date_filter == "this_year":
-        conditions.append("strftime('%Y', o.order_date) = strftime('%Y', 'now')")
+        conditions.append(db.DATE_FILTERS["this_year"])
         explanation_parts.append("placed this year")
 
     if customer:

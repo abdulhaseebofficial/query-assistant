@@ -11,7 +11,7 @@ database, a CSV you upload, or your own SQLite / PostgreSQL database.
 [![CI](https://github.com/abdulhaseebofficial/query-assistant/actions/workflows/ci.yml/badge.svg)](https://github.com/abdulhaseebofficial/query-assistant/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/Flask-3.0-000000?logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
-[![Tests](https://img.shields.io/badge/tests-240%20passing-3fb950)](tests/)
+[![Tests](https://img.shields.io/badge/tests-269%20passing-3fb950)](tests/)
 [![Ruff](https://img.shields.io/badge/lint-ruff-261230?logo=ruff&logoColor=white)](https://docs.astral.sh/ruff/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
@@ -169,9 +169,10 @@ query-assistant/
 │   ├── templates/               # Jinja2 templates (+ partials/)
 │   └── static/css/              # Stylesheets
 │
-├── tests/                    # 240 tests, ~7s, no network — tests/README.md
+├── tests/                    # 269 tests, ~5s, no network — tests/README.md
 ├── data/                     # Runtime data, git-ignored — data/README.md
 ├── docs/screenshots/         # Images used by this README
+├── backend/db.py             # SQLite / PostgreSQL dialect layer
 ├── run.py                    # Entry point (local)
 ├── api/index.py              # Entry point (serverless) — see Deployment
 ├── vercel.json               # Serverless routing + DATA_DIR override
@@ -180,39 +181,53 @@ query-assistant/
 
 ## Deployment
 
-The app is a normal Flask process that keeps its data in a SQLite file, so where you run
-it decides what survives a restart.
+The app stores its data — accounts, saved query history, the demo tables, uploaded CSVs —
+wherever `DATABASE_URL` points. Leave it unset and that's a SQLite file, which is right
+for local use and wrong for anything serverless, because a serverless host has no disk
+that survives a restart.
 
-### Somewhere with a disk (recommended)
+### Vercel
 
-Render, Railway, Fly.io, or any VPS. Point the start command at a WSGI server, set
-`SECRET_KEY`, attach a persistent disk mounted wherever `DATA_DIR` points, and everything
-works exactly as it does locally — accounts, saved history and uploaded datasets included.
+`vercel.json` and `api/index.py` are in the repo, so importing it into Vercel deploys
+without further setup. Set three environment variables under
+**Project Settings → Environment Variables**, then redeploy:
+
+| Variable | Value | Why |
+|---|---|---|
+| `DATABASE_URL` | a PostgreSQL connection string | **Required.** Without it the app falls back to a SQLite file in `/tmp`, which Vercel wipes — accounts and history would vanish between requests |
+| `SECRET_KEY` | any long random string | Without it each instance generates its own, so logins break immediately |
+| `GEMINI_API_KEY` | a key from [AI Studio](https://aistudio.google.com/apikey) | Optional, and what makes the deployment able to answer questions the rule engine can't |
+
+A free PostgreSQL database takes about two minutes:
+
+1. Sign up at [neon.tech](https://neon.tech) (or [supabase.com](https://supabase.com))
+2. Create a project — any region near your users
+3. Copy the connection string. **Use the pooled one** if you're offered a choice:
+   serverless opens a new connection per request and a direct connection will run out
+4. Paste it into Vercel as `DATABASE_URL`
+
+The schema is created on first boot, so there's no migration step. A custom domain works
+normally once this is set — **Project Settings → Domains**.
+
+Until `DATABASE_URL` is set, the app puts a banner on every page saying its data is
+temporary; adding the variable removes it automatically.
+
+One thing stays temporary on Vercel regardless: an external database attached through
+**Connect a Database** is written to `/tmp`, so that connection is lost on a restart.
+Everything else persists.
+
+### A host with a real disk
+
+Render, Railway, Fly.io, or any VPS. Nothing special is required — no `DATABASE_URL`, no
+`DATA_DIR` — as long as the disk persists:
 
 ```bash
 pip install gunicorn
 gunicorn 'backend.app:app' --bind 0.0.0.0:$PORT
 ```
 
-### Vercel (demo only)
-
-`vercel.json` and `api/index.py` are already in the repo, so importing it into Vercel
-deploys without further setup. Understand the trade-off first:
-
-Vercel is serverless. The deployment directory is read-only and only `/tmp` is writable,
-which is where `vercel.json` points `DATA_DIR`. `/tmp` doesn't survive a cold start and
-isn't shared between instances, so the demo database is re-seeded on each one and
-**registered accounts, saved query history, and uploaded CSVs last only as long as the
-instance that received them**. `EPHEMERAL_STORAGE=true` is set there so the UI says so
-rather than letting someone sign up for an account that quietly disappears.
-
-Everything that reads from the built-in demo database — which is most of the app — works
-normally. Set these in **Project Settings → Environment Variables**:
-
-| Variable | Why |
-|---|---|
-| `SECRET_KEY` | Without it a new random key is generated per instance, so logins break immediately |
-| `GEMINI_API_KEY` | Optional, and the thing that makes the deployed demo genuinely useful — see [Configuration](#configuration) |
+Set `SECRET_KEY`, and `SESSION_COOKIE_SECURE=true` once you're serving over HTTPS. Point
+`DATABASE_URL` at PostgreSQL here too if you'd rather not depend on a disk.
 
 Rate limiting uses in-memory counters, so on any multi-instance host the limits are
 per-instance. Point `Limiter(storage_uri=...)` at Redis if that matters to you.
@@ -230,6 +245,8 @@ and fill in what you need.
 | `AI_PROVIDER` | auto | `gemini` or `anthropic`. Leave blank to pick automatically (Gemini first); set it to pin one provider while both keys stay in `.env`. |
 | `GEMINI_MODEL` / `ANTHROPIC_MODEL` | `gemini-2.5-flash` / `claude-opus-5` | Move to a newer model without touching the code. |
 | `FLASK_DEBUG` | `false` | Auto-reload and interactive tracebacks. **Never `true` in production** — Flask's debugger allows arbitrary code execution if it is reachable. |
+| `DATABASE_URL` | unset | PostgreSQL connection string for the app's own data. Unset means a SQLite file under `DATA_DIR`. Required on any host without a persistent disk — see [Deployment](#deployment). |
+| `DATA_DIR` | `./data` | Where the SQLite file and uploaded files are written. Only needed where the deployment directory is read-only. |
 | `SESSION_COOKIE_SECURE` | `false` | Set to `true` once you are serving over HTTPS, so cookies are marked `Secure` and HSTS is sent. Defaults off so local `http://` development works. |
 | `ALLOW_PRIVATE_DB_HOSTS` | `false` | Allows PostgreSQL connections to localhost / private networks. Needed to connect a database on your own machine; leave off for anything internet-facing (see [SECURITY.md](SECURITY.md)). |
 
@@ -238,7 +255,7 @@ and fill in what you need.
 ```bash
 pip install -r requirements.txt -r requirements-dev.txt
 
-pytest              # 240 tests, about seven seconds
+pytest              # 269 tests, about five seconds
 ruff check .        # lint
 ```
 

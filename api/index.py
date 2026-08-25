@@ -4,22 +4,22 @@ Vercel turns every .py file under api/ into a function and looks for a module-le
 `app`; vercel.json then rewrites every path here, so this one function serves the
 whole site. `run.py` is the equivalent for running locally and is not used here.
 
-Two things differ from a normal server and are worth understanding before reading
-any bug report from a deployment:
+Two things differ from a normal server and both are handled by configuration rather
+than by anything special in this file:
 
-1. The deployment directory is read-only. Only /tmp is writable, so DATA_DIR is
-   pointed there (in vercel.json) and everything the app writes goes with it.
+1. The deployment directory is read-only — only /tmp can be written — so vercel.json
+   points DATA_DIR there and every path the app writes moves with it.
 
-2. /tmp does not survive a cold start, and separate instances don't share one.
-   So the demo database is re-seeded here on import — init_db() is idempotent, so
-   a warm instance pays nothing — and registered accounts, saved query history,
-   and uploaded CSVs last only as long as the instance that received them. That's
-   why the deployment sets EPHEMERAL_STORAGE=true, which puts a notice in the UI
-   instead of letting someone register an account that quietly vanishes.
+2. /tmp doesn't survive a cold start and isn't shared between instances, so it is not
+   somewhere data can live. That's what DATABASE_URL is for: set it and accounts,
+   query history, the demo tables and uploaded CSVs all live in PostgreSQL instead,
+   and the deployment behaves like any other. Leave it unset and the app still runs,
+   but everything resets on each cold start and the UI says so — see
+   EPHEMERAL_STORAGE in backend/config.py.
 
-For a deployment where that data has to persist, run this on a host that gives the
-process a real disk (see the deployment section in README.md) rather than working
-around it here.
+init_db() runs here rather than in a request because a cold start may be the first
+time this database has been seen. It is idempotent, so a warm instance pays nothing
+and an existing database is left alone.
 """
 
 from backend.app import app
