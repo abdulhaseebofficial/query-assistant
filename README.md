@@ -37,16 +37,18 @@ actually had.
 | | |
 |---|---|
 | **Plain-English questions** | *"employees in the IT department"*, *"products low on stock"*, *"total revenue this month"* |
-| **Roman Urdu too** | *"kitne employees hain"* works as well as *"how many employees"* |
+| **Roman Urdu too** | Not just the odd word — *"IT walay employees"* filters by department, *"aaj ke orders"* by date, *"total kitni sales hui"* totals rather than counts, *"sirf aik"* returns one row |
 | **Shows its work** | Every answer comes with the generated SQL, syntax-highlighted and copyable |
 | **Bring your own model** | Google Gemini or Anthropic Claude writes the SQL — set whichever key you have, or neither, and a rule-based engine takes over so the app never hard-fails |
 | **Says when it doesn't know** | The rule-based engine answers only the phrasings it genuinely encodes. Ask it something it can't express and it says so, and says why, instead of returning a table that looks like an answer |
 | **Your own data** | Upload a CSV, connect a SQLite file, or paste a PostgreSQL / Supabase connection string |
+| **Uploaded data answers back** | A spreadsheet gets the same treatment: *"total revenue"*, *"highest revenue"*, *"sab dikhao"* — column names are understood as columns rather than searched for as text |
 | **Tables and charts** | Results render as a table, and as a bar / line / pie chart when the shape of the data suits one |
 | **CSV export** | Download any result set |
 | **Accounts and history** | Optional sign-up; every question you ask is saved so you can find that query again |
 | **Learn SQL page** | A built-in guide from `SELECT` to multi-table joins, where every example runs live against the demo database |
 | **Light and dark** | Follows your preference, remembered across visits |
+| **A page that gets out of the way** | The heading is a greeting that follows the reader's clock; everything else on screen is something to use, not something explaining what to use |
 
 ## Quick start
 
@@ -109,6 +111,12 @@ earning more than 100000"* under the explanation "Lists all employees, sorted by
 it declines and the page explains which part it couldn't handle and that an API key
 would answer it. A confidently wrong answer is worse than no answer.
 
+The same rule applies to the parts of a question it *does* understand: a filter is
+either applied or the question is refused, never silently dropped. That distinction
+is what most of `tests/test_roman_urdu.py` exists to hold in place — "IT walay
+employees" once returned all eighteen employees, explained as "Lists all employees",
+because the department filter fell through without a word.
+
 ## Screenshots
 
 <table>
@@ -152,18 +160,21 @@ why. Click through to whichever one you're curious about.
 query-assistant/
 ├── backend/                  # Flask application — backend/README.md
 │   ├── app.py                   # Routes, request handling, view logic
+│   ├── db.py                    # SQLite / PostgreSQL dialect layer
 │   ├── config.py                # Central path configuration
-│   ├── database.py              # Demo schema + seed data
+│   ├── database.py              # Schema + demo seed data
 │   ├── auth.py                  # Accounts, login, query history
+│   ├── greeting.py              # The time-of-day heading
 │   ├── engines/                 # Question → SQL — engines/README.md
 │   │   ├── ai_engine.py            # Gemini / Claude generation + the SQL validator
-│   │   ├── rule_engine.py          # Rule-based fallback for the demo schema
-│   │   └── csv_engine.py           # Query builder for uploaded CSVs
+│   │   ├── rule_engine.py          # Rule-based answers for the demo schema
+│   │   ├── csv_engine.py           # Rule-based answers for an uploaded CSV
+│   │   └── phrases.py              # Vocabulary both rule-based engines share
 │   ├── connectors/              # External data sources — connectors/README.md
 │   │   ├── sqlite_connector.py     # Uploaded .db / .sqlite files
 │   │   └── postgres_connector.py   # PostgreSQL / Supabase over a DSN
 │   ├── content/                 # Static content for the Learn SQL page
-│   └── utils/                   # chart_utils.py — results into chart data
+│   └── utils/                   # chart_utils.py, csv_export.py
 │
 ├── frontend/                 # Everything the browser sees — frontend/README.md
 │   ├── templates/               # Jinja2 templates (+ partials/)
@@ -172,7 +183,6 @@ query-assistant/
 ├── tests/                    # 408 tests, ~6s, no network — tests/README.md
 ├── data/                     # Runtime data, git-ignored — data/README.md
 ├── docs/screenshots/         # Images used by this README
-├── backend/db.py             # SQLite / PostgreSQL dialect layer
 ├── run.py                    # Entry point (local)
 ├── api/index.py              # Entry point (serverless) — see Deployment
 ├── vercel.json               # Serverless routing + DATA_DIR override
