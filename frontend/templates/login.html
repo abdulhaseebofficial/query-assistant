@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log In — Query Assistant</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    {% include 'partials/_nav.html' %}
+    <div class="frame">
+        <div class="container container-narrow">
+            <header>
+                <h1>Log In</h1>
+                <p class="subtitle">Log in to save and revisit your query history.</p>
+            </header>
+
+            {% if error %}
+            <div class="no-results" style="margin-bottom: 24px;">
+                <p class="no-results-title">Couldn't log in</p>
+                <p>{{ error }}</p>
+            </div>
+            {% endif %}
+
+            <form action="/login" method="POST" class="upload-form">
+                <label class="upload-field">
+                    <span class="upload-label">Username</span>
+                    <input type="text" name="username" required autofocus>
+                </label>
+                <label class="upload-field">
+                    <span class="upload-label">Password</span>
+                    <input type="password" name="password" required>
+                </label>
+                <button type="submit">Log In</button>
+            </form>
+
+            <div class="upload-notes">
+                <p>Don't have an account? <a class="nav-link" href="/register" style="display:inline;">Sign up</a></p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

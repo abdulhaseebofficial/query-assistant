@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ table.name }} — Query Assistant</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    {% include 'partials/_nav.html' %}
+    <div class="frame">
+        <div class="container">
+            <header>
+                <h1>{{ table.name }}</h1>
+                <p class="subtitle">From your connected database — {{ table.row_count }} rows, {{ table.columns|length }} columns.</p>
+                <a class="nav-link" href="/connect-db">All tables</a>
+            </header>
+
+            <form action="/connect-db/{{ table.name }}" method="GET" class="search-form">
+                <input
+                    type="text"
+                    name="q"
+                    placeholder="e.g. rows containing 'chair', or how many rows are there"
+                    value="{{ query }}"
+                    autofocus
+                >
+                <button type="submit">Ask</button>
+            </form>
+
+            <details class="schema-guide">
+                <summary>Table Columns</summary>
+                <div class="schema-tables">
+                    <div class="schema-table">
+                        <h5>{{ table.name }}</h5>
+                        <ul>
+                            {% for label, col_type in table.columns|zip(table.types) %}
+                            <li>{{ label }} <em>({{ col_type }})</em></li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </details>
+
+            {% if searched %}
+                <div class="explanation">
+                    <div class="explanation-head">
+                        <span class="explanation-label">Task understood</span>
+                        <span class="engine-badge engine-{{ result.engine }}">{{ 'AI' if result.engine == 'ai' else 'Rule-based' }}</span>
+                    </div>
+                    <p>{{ result.explanation }}</p>
+                </div>
+
+                {% if result.is_aggregate and result.rows %}
+                    {% set stat = result.rows[0] %}
+                    <div class="stat-card">
+                        <span class="stat-value">
+                            {% if stat['count'] is none %}0{% else %}{{ stat['count']|commas }}{% endif %}
+                        </span>
+                        <span class="stat-label">matching rows</span>
+                    </div>
+                {% elif result.rows %}
+                    <div class="result-toolbar">
+                        <p class="result-count">{{ result.rows|length }} row{{ 's' if result.rows|length != 1 else '' }} found</p>
+                        <a class="toolbar-btn" href="/connect-db/{{ table.name }}/export?q={{ query|urlencode }}">Download CSV</a>
+                    </div>
+                    <div class="table-wrap">
+                        <table class="results-table">
+                            <thead>
+                                <tr>
+                                    {% for col in result.columns %}
+                                    <th>{{ result.label_map.get(col, col) }}</th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in result.rows %}
+                                <tr>
+                                    {% for col in result.columns %}
+                                    <td>{{ row[col]|commas }}</td>
+                                    {% endfor %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% include 'partials/_chart.html' %}
+                {% else %}
+                    <div class="no-results">
+                        <p class="no-results-title">No matching rows</p>
+                        <p>The query ran successfully but nothing matched. Try different wording.</p>
+                    </div>
+                {% endif %}
+
+                <div class="sql-box">
+                    <div class="sql-box-header">
+                        <h4>Generated SQL Query</h4>
+                        <div class="sql-box-actions">
+                            <span class="sql-box-tag">SQLite</span>
+                            <button type="button" class="copy-btn" onclick="copySql(this)">Copy Query</button>
+                        </div>
+                    </div>
+                    <pre><code>{{ result.sql_display|safe }}</code></pre>
+                </div>
+            {% else %}
+                <div class="intro">
+                    <div class="intro-step">
+                        <span class="intro-num">1</span>
+                        <p>Describe what you're looking for in this table, in your own words.</p>
+                    </div>
+                    <div class="intro-step">
+                        <span class="intro-num">2</span>
+                        <p>The assistant searches every column and builds the matching SQL query.</p>
+                    </div>
+                    <div class="intro-step">
+                        <span class="intro-num">3</span>
+                        <p>It runs the query and shows you the rows — and the exact SQL to reuse.</p>
+                    </div>
+                </div>
+            {% endif %}
+
+        </div>
+    </div>
+
+    <script>
+        function copySql(btn) {
+            const codeEl = document.querySelector('.sql-box code');
+            if (!codeEl) return;
+            navigator.clipboard.writeText(codeEl.innerText).then(() => {
+                const original = btn.textContent;
+                btn.textContent = 'Copied';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = original;
+                    btn.classList.remove('copied');
+                }, 1500);
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Query Assistant — Company Database</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    {% include 'partials/_nav.html' %}
+    <div class="frame">
+        <div class="container">
+            <header>
+                <h1>Query Assistant</h1>
+                <p class="subtitle">Can't remember the SQL? Describe the task in plain English — the assistant writes the query, runs it, and shows you both.</p>
+                <div class="header-actions">
+                    <a class="learn-btn" href="/learn">Learn SQL</a>
+                    <a class="learn-btn learn-btn-outline" href="/upload">Use My Own Data</a>
+                    <a class="learn-btn learn-btn-outline" href="/connect-db">Connect a Database</a>
+                </div>
+            </header>
+
+            <form action="/" method="GET" class="search-form">
+                <input
+                    type="text"
+                    name="q"
+                    placeholder="e.g. employees in the IT department"
+                    value="{{ query }}"
+                    autofocus
+                >
+                <button type="submit">Ask</button>
+            </form>
+
+            <div class="chips">
+                <span class="chips-label">Try:</span>
+                {% for example in examples %}
+                <a class="chip" href="/?q={{ example|urlencode }}">{{ example }}</a>
+                {% endfor %}
+            </div>
+
+            <details class="schema-guide">
+                <summary>Database Schema Reference</summary>
+                <div class="schema-tables">
+                    <div class="schema-table">
+                        <h5>employees</h5>
+                        <ul>
+                            <li>id</li>
+                            <li>name</li>
+                            <li>department_id &rarr; departments.id</li>
+                            <li>position</li>
+                            <li>salary</li>
+                            <li>email</li>
+                            <li>hire_date</li>
+                        </ul>
+                    </div>
+                    <div class="schema-table">
+                        <h5>departments</h5>
+                        <ul>
+                            <li>id</li>
+                            <li>name</li>
+                            <li>location</li>
+                            <li>manager_name</li>
+                        </ul>
+                    </div>
+                    <div class="schema-table">
+                        <h5>products</h5>
+                        <ul>
+                            <li>id</li>
+                            <li>name</li>
+                            <li>category</li>
+                            <li>price</li>
+                            <li>stock_quantity</li>
+                        </ul>
+                    </div>
+                    <div class="schema-table">
+                        <h5>customers</h5>
+                        <ul>
+                            <li>id</li>
+                            <li>name</li>
+                            <li>email</li>
+                            <li>city</li>
+                            <li>phone</li>
+                        </ul>
+                    </div>
+                    <div class="schema-table">
+                        <h5>orders</h5>
+                        <ul>
+                            <li>id</li>
+                            <li>customer_id &rarr; customers.id</li>
+                            <li>product_id &rarr; products.id</li>
+                            <li>quantity</li>
+                            <li>order_date</li>
+                            <li>total_amount</li>
+                            <li>status</li>
+                        </ul>
+                    </div>
+                </div>
+            </details>
+
+            {% if searched %}
+                {% if result.understood %}
+                    <div class="explanation">
+                        <div class="explanation-head">
+                            <span class="explanation-label">Task understood</span>
+                            <span class="engine-badge engine-{{ result.engine }}">{{ 'AI' if result.engine == 'ai' else 'Rule-based' }}</span>
+                        </div>
+                        <p>{{ result.explanation }}</p>
+                    </div>
+
+                    {% if result.is_aggregate and result.rows %}
+                        {% set stat = result.rows[0] %}
+                        {% set stat_key = result.columns[0] %}
+                        <div class="stat-card">
+                            <span class="stat-value">
+                                {% if stat[stat_key] is none %}0{% else %}{{ stat[stat_key]|commas }}{% endif %}
+                            </span>
+                            <span class="stat-label">{{ stat_key }}</span>
+                        </div>
+                    {% elif result.rows %}
+                        <div class="result-toolbar">
+                            <p class="result-count">{{ result.rows|length }} record{{ 's' if result.rows|length != 1 else '' }} found</p>
+                            <a class="toolbar-btn" href="/export?q={{ query|urlencode }}">Download CSV</a>
+                        </div>
+                        <div class="table-wrap">
+                            <table class="results-table">
+                                <thead>
+                                    <tr>
+                                        {% for col in result.columns %}
+                                        <th>{{ col.replace('_', ' ') }}</th>
+                                        {% endfor %}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for row in result.rows %}
+                                    <tr>
+                                        {% for col in result.columns %}
+                                        <td>{{ row[col]|commas }}</td>
+                                        {% endfor %}
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% include 'partials/_chart.html' %}
+                    {% else %}
+                        <div class="no-results">
+                            <p class="no-results-title">No matching records</p>
+                            <p>The query ran successfully but nothing matched. Try different wording.</p>
+                        </div>
+                    {% endif %}
+
+                    <div class="sql-box">
+                        <div class="sql-box-header">
+                            <h4>Generated SQL Query</h4>
+                            <div class="sql-box-actions">
+                                <span class="sql-box-tag">SQLite</span>
+                                <button type="button" class="copy-btn" onclick="copySql(this)">Copy Query</button>
+                            </div>
+                        </div>
+                        <pre><code>{{ result.sql_display|safe }}</code></pre>
+                    </div>
+                {% else %}
+                    <div class="no-results">
+                        <p class="no-results-title">Couldn't tell what you're asking for</p>
+                        <p>Try mentioning <em>employees</em>, <em>departments</em>, <em>products</em>, <em>customers</em>, or <em>orders</em>.</p>
+                    </div>
+                {% endif %}
+            {% else %}
+                <div class="intro">
+                    <div class="intro-step">
+                        <span class="intro-num">1</span>
+                        <p>Describe the task you need done, in your own words.</p>
+                    </div>
+                    <div class="intro-step">
+                        <span class="intro-num">2</span>
+                        <p>The assistant turns it into a real SQL query against the company database.</p>
+                    </div>
+                    <div class="intro-step">
+                        <span class="intro-num">3</span>
+                        <p>It runs the query and shows you the result — and the exact SQL to reuse.</p>
+                    </div>
+                </div>
+            {% endif %}
+
+        </div>
+    </div>
+
+    <script>
+        function copySql(btn) {
+            const codeEl = document.querySelector('.sql-box code');
+            if (!codeEl) return;
+            navigator.clipboard.writeText(codeEl.innerText).then(() => {
+                const original = btn.textContent;
+                btn.textContent = 'Copied';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = original;
+                    btn.classList.remove('copied');
+                }, 1500);
+            });
+        }
+    </script>
+</body>
+</html>

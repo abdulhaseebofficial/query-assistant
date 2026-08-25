@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connect a Database — Query Assistant</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    {% include 'partials/_nav.html' %}
+    <div class="frame">
+        <div class="container">
+            <header>
+                <h1>Connect a Database</h1>
+                <p class="subtitle">Connect a SQLite file, or a PostgreSQL / Supabase database, and search any table in plain English.</p>
+                <a class="nav-link" href="/">Back to Query Assistant</a>
+            </header>
+
+            {% if error %}
+            <div class="no-results" style="margin-bottom: 30px;">
+                <p class="no-results-title">Connection failed</p>
+                <p>{{ error }}</p>
+            </div>
+            {% endif %}
+
+            {% if connected %}
+            <div class="explanation" style="margin-bottom: 20px;">
+                <span class="explanation-label">{{ kind }} database connected</span>
+                <p>{{ tables|length }} table{{ 's' if tables|length != 1 else '' }} found. Pick one below to start asking questions.</p>
+            </div>
+
+            <div class="table-list">
+                {% for table in tables %}
+                <a class="table-card" href="/connect-db/{{ table.name }}">
+                    <div class="table-card-main">
+                        <h3>{{ table.name }}</h3>
+                        <p>{{ table.row_count }} row{{ 's' if table.row_count != 1 else '' }} &middot; {{ table.columns|length }} column{{ 's' if table.columns|length != 1 else '' }}</p>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+
+            <div class="chips" style="margin-bottom: 40px;">
+                <form action="/connect-db/clear" method="POST" style="display:inline;">
+                    <button type="submit" class="chip" style="cursor:pointer; font-family:inherit;">Disconnect this database</button>
+                </form>
+            </div>
+            {% else %}
+
+            <div class="connect-options">
+                <form action="/connect-db" method="POST" enctype="multipart/form-data" class="upload-form">
+                    <div class="upload-field">
+                        <span class="upload-label">SQLite file</span>
+                    </div>
+                    <label class="upload-field">
+                        <input type="file" name="file" accept=".db,.sqlite,.sqlite3" required>
+                    </label>
+                    <button type="submit">Connect SQLite File</button>
+                </form>
+
+                <form action="/connect-db/postgres" method="POST" class="upload-form">
+                    <div class="upload-field">
+                        <span class="upload-label">PostgreSQL / Supabase connection string</span>
+                    </div>
+                    <label class="upload-field">
+                        <input
+                            type="text"
+                            name="dsn"
+                            placeholder="postgresql://postgres:[PASSWORD]@db.xxxxxxxx.supabase.co:5432/postgres"
+                        >
+                    </label>
+                    <button type="submit">Connect Database</button>
+                </form>
+            </div>
+
+            <div class="upload-notes">
+                <p>
+                    <strong>SQLite:</strong> upload a .db / .sqlite / .sqlite3 file, up to 5&nbsp;MB &mdash; every table becomes searchable.<br>
+                    <strong>PostgreSQL / Supabase:</strong> paste the connection string from your Supabase project's
+                    Database Settings &rarr; Connection String. Tables in the <code>public</code> schema become searchable.
+                    The connection string is stored locally on this machine only, never sent anywhere else.
+                </p>
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+</body>
+</html>

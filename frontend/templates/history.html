@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Query History — Query Assistant</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    {% include 'partials/_nav.html' %}
+    <div class="frame">
+        <div class="container">
+            <header>
+                <h1>Query History</h1>
+                <p class="subtitle">Your last {{ entries|length }} quer{{ 'y' if entries|length == 1 else 'ies' }}, most recent first.</p>
+                <a class="nav-link" href="/">Back to Query Assistant</a>
+            </header>
+
+            {% if entries %}
+            <div class="history-list">
+                {% for entry in entries %}
+                <div class="history-item">
+                    <div class="history-item-main">
+                        <span class="history-source">
+                            {% if entry.source == '/' %}Company Database
+                            {% elif entry.source == '/dataset' %}My Dataset
+                            {% else %}Table: {{ entry.source.replace('/connect-db/', '') }}
+                            {% endif %}
+                        </span>
+                        <span class="engine-badge engine-{{ entry.engine }}">{{ 'AI' if entry.engine == 'ai' else 'Rule-based' }}</span>
+                        <span class="history-time">{{ entry.created_at }}</span>
+                    </div>
+                    <p class="history-query">{{ entry.query_text }}</p>
+                    <pre class="history-sql"><code>{{ entry.sql_text }}</code></pre>
+                    <a class="toolbar-btn" href="{{ entry.source }}?q={{ entry.query_text|urlencode }}">Re-run</a>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="no-results">
+                <p class="no-results-title">No queries yet</p>
+                <p>Run a query anywhere in the app and it'll show up here.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

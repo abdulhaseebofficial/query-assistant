@@ -1,0 +1,50 @@
+<div class="topbar">
+    <div class="topbar-inner">
+        <a class="topbar-brand" href="/">Query Assistant</a>
+        <div class="topbar-actions">
+            <a class="topbar-link" href="/learn">Learn SQL</a>
+            {% if current_user.is_authenticated %}
+            <a class="topbar-link" href="/history">History</a>
+            <span class="topbar-user">{{ current_user.username }}</span>
+            <form action="/logout" method="POST" class="topbar-form">
+                <button type="submit" class="topbar-link topbar-link-btn">Log out</button>
+            </form>
+            {% else %}
+            <a class="topbar-link" href="/login">Log in</a>
+            <a class="topbar-link" href="/register">Sign up</a>
+            {% endif %}
+            <button type="button" class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark mode">
+                <span class="theme-toggle-icon" id="theme-toggle-icon">&#9789;</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        if (localStorage.getItem('theme') === 'light') {
+            document.documentElement.setAttribute('data-theme', 'light');
+        }
+    })();
+
+    function updateThemeIcon() {
+        var icon = document.getElementById('theme-toggle-icon');
+        if (!icon) return;
+        var isLight = document.documentElement.getAttribute('data-theme') === 'light';
+        icon.innerHTML = isLight ? '&#9789;' : '&#9788;';
+    }
+
+    function toggleTheme() {
+        var root = document.documentElement;
+        if (root.getAttribute('data-theme') === 'light') {
+            root.removeAttribute('data-theme');
+            localStorage.setItem('theme', 'dark');
+        } else {
+            root.setAttribute('data-theme', 'light');
+            localStorage.setItem('theme', 'light');
+        }
+        updateThemeIcon();
+    }
+
+    updateThemeIcon();
+</script>

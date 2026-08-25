@@ -1,0 +1,80 @@
+{% if result.chart %}
+<div class="view-toggle">
+    <button type="button" class="view-btn active" onclick="switchResultView('table', this)">Table</button>
+    <button type="button" class="view-btn" onclick="switchResultView('chart', this)">Chart</button>
+</div>
+<div id="chart-view" class="chart-card" style="display:none;">
+    <canvas id="result-chart"></canvas>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    (function() {
+        var chartData = {{ result.chart|tojson }};
+        var chartInstance = null;
+
+        function cssVar(name) {
+            return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        }
+
+        function slicePalette(n) {
+            var base = [
+                cssVar('--accent'), '#7fa8c9', '#8fd694',
+                '#e8935f', '#c98fd6', '#d6c98f'
+            ];
+            var colors = [];
+            for (var i = 0; i < n; i++) colors.push(base[i % base.length]);
+            return colors;
+        }
+
+        window.switchResultView = function(view, btn) {
+            var tableEl = document.querySelector('.table-wrap');
+            var chartEl = document.getElementById('chart-view');
+            document.querySelectorAll('.view-btn').forEach(function(b) { b.classList.remove('active'); });
+            btn.classList.add('active');
+
+            if (view === 'chart') {
+                if (tableEl) tableEl.style.display = 'none';
+                chartEl.style.display = 'block';
+                if (chartInstance) {
+                    chartInstance.destroy();
+                    chartInstance = null;
+                }
+
+                var ctx = document.getElementById('result-chart').getContext('2d');
+                var textColor = cssVar('--text-soft');
+                var gridColor = cssVar('--border');
+                var accent = cssVar('--accent');
+                var isPie = chartData.type === 'pie';
+
+                chartInstance = new Chart(ctx, {
+                    type: chartData.type,
+                    data: {
+                        labels: chartData.labels,
+                        datasets: [{
+                            label: chartData.value_label,
+                            data: chartData.values,
+                            backgroundColor: isPie ? slicePalette(chartData.labels.length) : accent + 'a0',
+                            borderColor: isPie ? cssVar('--bg-card') : accent,
+                            borderWidth: isPie ? 2 : 1.5
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        color: textColor,
+                        plugins: {
+                            legend: { display: isPie, labels: { color: textColor } }
+                        },
+                        scales: isPie ? {} : {
+                            x: { ticks: { color: textColor }, grid: { color: gridColor } },
+                            y: { ticks: { color: textColor }, grid: { color: gridColor } }
+                        }
+                    }
+                });
+            } else {
+                if (tableEl) tableEl.style.display = '';
+                chartEl.style.display = 'none';
+            }
+        };
+    })();
+</script>
+{% endif %}

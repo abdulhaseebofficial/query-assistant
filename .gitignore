@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Environment
+.env
+
+# Generated / user data (recreated by init_db() or uploaded at runtime)
+data/*.db
+data/uploads/*
+!data/uploads/.gitkeep
+
+# Editors / OS
+.vscode/
+.idea/
+.claude/
+.DS_Store
+Thumbs.db

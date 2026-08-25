@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Use Your Own Data — Query Assistant</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    {% include 'partials/_nav.html' %}
+    <div class="frame">
+        <div class="container">
+            <header>
+                <h1>Use Your Own Data</h1>
+                <p class="subtitle">Upload a CSV file and search it the same way — plain English in, SQL and results out.</p>
+                <a class="nav-link" href="/">Back to Query Assistant</a>
+            </header>
+
+            {% if error %}
+            <div class="no-results" style="margin-bottom: 30px;">
+                <p class="no-results-title">Upload failed</p>
+                <p>{{ error }}</p>
+            </div>
+            {% endif %}
+
+            {% if current %}
+            <div class="explanation" style="margin-bottom: 30px;">
+                <span class="explanation-label">Dataset loaded</span>
+                <p>
+                    <strong>{{ current.name }}</strong> &mdash; {{ current.row_count }} row{{ 's' if current.row_count != 1 else '' }},
+                    {{ current.labels|length }} column{{ 's' if current.labels|length != 1 else '' }}:
+                    {{ current.labels|join(', ') }}
+                </p>
+            </div>
+            <div class="chips" style="margin-bottom: 40px;">
+                <a class="chip" href="/dataset">Query this dataset</a>
+                <form action="/dataset/clear" method="POST" style="display:inline;">
+                    <button type="submit" class="chip" style="cursor:pointer; font-family:inherit;">Remove dataset</button>
+                </form>
+            </div>
+            {% endif %}
+
+            <form action="/upload" method="POST" enctype="multipart/form-data" class="upload-form">
+                <label class="upload-field">
+                    <span class="upload-label">Dataset name</span>
+                    <input type="text" name="dataset_name" placeholder="e.g. Inventory Records" maxlength="60">
+                </label>
+
+                <label class="upload-field">
+                    <span class="upload-label">CSV file</span>
+                    <input type="file" name="file" accept=".csv" required>
+                </label>
+
+                <button type="submit">Upload &amp; Continue</button>
+            </form>
+
+            <div class="upload-notes">
+                <p>The first row should be column headers. Numbers are detected automatically so filtering and sorting work. Files up to 5&nbsp;MB / 5,000 rows.</p>
+            </div>
+
+        </div>
+    </div>
+</body>
+</html>
