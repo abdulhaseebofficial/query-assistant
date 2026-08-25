@@ -113,7 +113,7 @@ would answer it. A confidently wrong answer is worse than no answer.
 
 <table>
 <tr>
-<td width="50%"><img src="docs/screenshots/home.png" alt="The home page with example questions"><br><b>Ask anything</b><br>Example questions to start from, and the schema is one click away.</td>
+<td width="50%"><img src="docs/screenshots/home.png" alt="The home page: a search box and example questions"><br><b>Ask anything</b><br>Example questions to start from; the schema is one click away.</td>
 <td width="50%"><img src="docs/screenshots/learn.png" alt="The Learn SQL guide"><br><b>Learn SQL</b><br>Every example is a real query you can run against the demo data.</td>
 </tr>
 <tr>

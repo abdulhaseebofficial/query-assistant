@@ -13,13 +13,7 @@
     <div class="frame">
         <div class="container">
             <header>
-                <h1>Query Assistant</h1>
-                <p class="subtitle">Can't remember the SQL? Describe the task in plain English — the assistant writes the query, runs it, and shows you both.</p>
-                <div class="header-actions">
-                    <a class="learn-btn" href="/learn">Learn SQL</a>
-                    <a class="learn-btn learn-btn-outline" href="/upload">Use My Own Data</a>
-                    <a class="learn-btn learn-btn-outline" href="/connect-db">Connect a Database</a>
-                </div>
+                <h1>Ask your data a question</h1>
             </header>
 
             <form action="/" method="GET" class="search-form">
@@ -34,10 +28,14 @@
             </form>
 
             <div class="chips">
-                <span class="chips-label">Try:</span>
                 {% for example in examples %}
                 <a class="chip" href="/?q={{ example|urlencode }}">{{ example }}</a>
                 {% endfor %}
+            </div>
+
+            <div class="source-links">
+                <a href="/upload">Use my own CSV</a>
+                <a href="/connect-db">Connect a database</a>
             </div>
 
             <details class="schema-guide">
@@ -211,21 +209,6 @@
                     {% endif %}
                     </div>
                 {% endif %}
-            {% else %}
-                <div class="intro">
-                    <div class="intro-step">
-                        <span class="intro-num">1</span>
-                        <p>Describe the task you need done, in your own words.</p>
-                    </div>
-                    <div class="intro-step">
-                        <span class="intro-num">2</span>
-                        <p>The assistant turns it into a real SQL query against the company database.</p>
-                    </div>
-                    <div class="intro-step">
-                        <span class="intro-num">3</span>
-                        <p>It runs the query and shows you the result — and the exact SQL to reuse.</p>
-                    </div>
-                </div>
             {% endif %}
 
         </div>

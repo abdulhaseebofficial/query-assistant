@@ -14,7 +14,7 @@
         <div class="container">
             <header>
                 <h1>{{ table.name }}</h1>
-                <p class="subtitle">From your connected database — {{ table.row_count }} rows, {{ table.columns|length }} columns.</p>
+                <p class="subtitle">{{ table.row_count }} rows &middot; {{ table.columns|length }} columns</p>
                 <a class="nav-link" href="/connect-db">All tables</a>
             </header>
 
@@ -104,20 +104,6 @@
                     <pre><code>{{ result.sql_display|safe }}</code></pre>
                 </div>
             {% else %}
-                <div class="intro">
-                    <div class="intro-step">
-                        <span class="intro-num">1</span>
-                        <p>Describe what you're looking for in this table, in your own words.</p>
-                    </div>
-                    <div class="intro-step">
-                        <span class="intro-num">2</span>
-                        <p>The assistant searches every column and builds the matching SQL query.</p>
-                    </div>
-                    <div class="intro-step">
-                        <span class="intro-num">3</span>
-                        <p>It runs the query and shows you the rows — and the exact SQL to reuse.</p>
-                    </div>
-                </div>
             {% endif %}
 
         </div>

@@ -13,9 +13,8 @@
     <div class="frame">
         <div class="container">
             <header>
-                <h1>Query History</h1>
-                <p class="subtitle">Your last {{ entries|length }} quer{{ 'y' if entries|length == 1 else 'ies' }}, most recent first.</p>
-                <a class="nav-link" href="/">Back to Query Assistant</a>
+                <h1>Query history</h1>
+                <p class="subtitle">{{ entries|length }} quer{{ 'y' if entries|length == 1 else 'ies' }}, most recent first.</p>
             </header>
 
             {% if entries %}

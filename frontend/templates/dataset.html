@@ -14,7 +14,7 @@
         <div class="container">
             <header>
                 <h1>{{ meta.name }}</h1>
-                <p class="subtitle">Your own uploaded data — {{ meta.row_count }} rows, {{ meta.labels|length }} columns. Search it the same way as the company database.</p>
+                <p class="subtitle">{{ meta.row_count }} rows &middot; {{ meta.labels|length }} columns</p>
                 <a class="nav-link" href="/upload">Manage dataset</a>
             </header>
 
@@ -104,20 +104,6 @@
                     <pre><code>{{ result.sql_display|safe }}</code></pre>
                 </div>
             {% else %}
-                <div class="intro">
-                    <div class="intro-step">
-                        <span class="intro-num">1</span>
-                        <p>Describe what you're looking for in this dataset, in your own words.</p>
-                    </div>
-                    <div class="intro-step">
-                        <span class="intro-num">2</span>
-                        <p>The assistant searches every column and builds the matching SQL query.</p>
-                    </div>
-                    <div class="intro-step">
-                        <span class="intro-num">3</span>
-                        <p>It runs the query and shows you the rows — and the exact SQL to reuse.</p>
-                    </div>
-                </div>
             {% endif %}
 
         </div>

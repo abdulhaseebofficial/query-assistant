@@ -81,16 +81,17 @@ body {
 
 header {
     text-align: center;
-    margin-bottom: 32px;
+    margin-bottom: 26px;
 }
 
 h1 {
     font-family: 'Fraunces', Georgia, serif;
     font-weight: 600;
-    font-size: 2.5rem;
-    letter-spacing: -0.01em;
+    font-size: 2.6rem;
+    line-height: 1.15;
+    letter-spacing: -0.015em;
     color: var(--text);
-    margin: 0 0 12px;
+    margin: 0;
 }
 
 .subtitle {
@@ -101,45 +102,16 @@ h1 {
     line-height: 1.6;
 }
 
-.header-actions {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin-top: 20px;
+/* h1 carries no bottom margin so a heading on its own sits tight against what
+   follows; the gap only appears when there's a subtitle to separate. */
+h1 + .subtitle {
+    margin-top: 12px;
 }
 
-.learn-btn {
-    display: inline-flex;
-    align-items: center;
-    font-family: 'Inter', sans-serif;
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: #fff;
-    text-decoration: none;
-    background: var(--accent);
-    border: 1px solid var(--accent);
-    border-radius: 999px;
-    padding: 10px 22px;
-    transition: background 0.15s, transform 0.15s;
-}
 
-.learn-btn:hover {
-    background: var(--accent-hover);
-    border-color: var(--accent-hover);
-    transform: translateY(-1px);
-}
 
-.learn-btn-outline {
-    color: var(--accent);
-    background: transparent;
-}
 
-.learn-btn-outline:hover {
-    background: var(--accent-bg);
-    color: var(--accent-hover);
-    border-color: var(--accent);
-}
+
 
 .nav-link {
     display: inline-flex;
@@ -163,7 +135,7 @@ h1 {
 .search-form {
     display: flex;
     gap: 10px;
-    margin-bottom: 18px;
+    margin-bottom: 16px;
 }
 
 .search-form input[type="text"] {
@@ -185,7 +157,7 @@ h1 {
 
 .search-form input[type="text"]:focus {
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-bg);
+    box-shadow: 0 0 0 4px var(--accent-bg);
 }
 
 .search-form button {
@@ -214,15 +186,11 @@ h1 {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
+    justify-content: center;
     gap: 8px;
-    margin-bottom: 32px;
+    margin-bottom: 22px;
 }
 
-.chips-label {
-    color: var(--text-faint);
-    font-size: 0.88rem;
-    margin-right: 2px;
-}
 
 .chip {
     display: inline-block;
@@ -244,23 +212,37 @@ h1 {
 }
 
 .schema-guide {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
+    border: 1px solid transparent;
     border-radius: 16px;
-    padding: 16px 22px;
+    padding: 10px 22px;
     margin-bottom: 32px;
+    transition: background 0.15s, border-color 0.15s;
 }
 
 .schema-guide summary {
     cursor: pointer;
-    font-weight: 600;
-    font-size: 0.92rem;
-    color: var(--text);
+    font-weight: 500;
+    font-size: 0.88rem;
+    color: var(--text-faint);
     outline: none;
+    transition: color 0.15s;
+}
+
+.schema-guide summary:hover {
+    color: var(--text-soft);
+}
+
+/* Only takes on a card once it's open and has something to hold. */
+.schema-guide[open] {
+    background: var(--bg-card);
+    border-color: var(--border);
+    padding: 16px 22px;
 }
 
 .schema-guide[open] summary {
     margin-bottom: 16px;
+    color: var(--text);
+    font-weight: 600;
 }
 
 .schema-tables {
@@ -541,41 +523,6 @@ h1 {
     color: #8fd694;
 }
 
-.intro {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-    margin: 24px 0 10px;
-}
-
-.intro-step {
-    text-align: center;
-    padding: 24px 18px;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-}
-
-.intro-num {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 30px;
-    height: 30px;
-    margin: 0 auto 12px;
-    border-radius: 50%;
-    background: var(--accent-bg);
-    color: var(--accent);
-    font-weight: 700;
-    font-size: 0.9rem;
-}
-
-.intro-step p {
-    margin: 0;
-    color: var(--text-soft);
-    font-size: 0.93rem;
-    line-height: 1.5;
-}
 
 .table-list {
     display: flex;
@@ -737,11 +684,6 @@ h1 {
     margin: 0;
 }
 
-@media (max-width: 700px) {
-    .intro {
-        grid-template-columns: 1fr;
-    }
-}
 
 @media (max-width: 600px) {
     .container {
@@ -993,4 +935,29 @@ body,
 .sql-box,
 .chart-card {
     transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+
+/* The other data sources, kept as quiet links rather than three filled buttons
+   competing with the search box for attention. */
+.source-links {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 22px;
+    margin-bottom: 34px;
+}
+
+.source-links a {
+    font-size: 0.88rem;
+    color: var(--text-faint);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    padding-bottom: 1px;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.source-links a:hover {
+    color: var(--accent-hover);
+    border-bottom-color: var(--accent-bg);
 }

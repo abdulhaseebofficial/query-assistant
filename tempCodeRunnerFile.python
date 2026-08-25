@@ -1,0 +1,24 @@
+# C5 - Menu-Driven List Manager
+# Name: sibtain Abbas
+# Roll number: 25k-0139
+my_list = []
+choice = True
+while choice:
+    choice = input("Enter your choice (add/remove/view/exit): ").lower()
+    if choice == "add":
+        item = input("Enter item to add: ")
+        my_list.append(item)
+        print(f"{item} added to the list.")
+    elif choice == "remove":
+        item = input("Enter item to remove: ")
+        if item in my_list:
+            my_list.remove(item)
+            print(f"{item} removed from the list.")
+        else:
+            print(f"{item} not found in the list.")
+    elif choice == "view":
+        print("Current list:", my_list)
+    elif choice == "exit":
+        break
+    else:
+        print("Invalid choice.")
