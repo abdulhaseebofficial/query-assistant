@@ -63,6 +63,13 @@ DATE_PHRASES = (
     "this year", "current year",
 )
 
+# Someone asking for exactly one row, in either language. See wants_single_row.
+SINGLE_ROW_PHRASES = (
+    "sirf aik", "sirf ek", "sirf 1", "srif aik", "srif ek",
+    "only one", "only 1", "just one", "just 1", "top 1", "number 1",
+    "aik hi", "ek hi", "single", "one only",
+)
+
 # Everything above, plus the aggregate and status words — what a question may contain
 # without the engine having to admit it's guessing.
 RECOGNISED_PHRASES = (
@@ -77,6 +84,7 @@ RECOGNISED_PHRASES = (
     + EXPENSIVE_PHRASES
     + CHEAP_PHRASES
     + DATE_PHRASES
+    + SINGLE_ROW_PHRASES
 )
 
 # A question can name a constraint these fixed templates have no way to express —
@@ -140,11 +148,19 @@ def any_word_in(words, text):
 
 # "the highest paid employee" wants one row; "highest paid employees" wants a list.
 # Returning five for the first isn't wrong, but it isn't the answer either.
-SINGULAR_HINTS = ("person", "who is", "who has", "kaun", "kis ki", "kis ka", "single")
+#
+# SINGLE_ROW_PHRASES is someone saying "just one" outright, in either language. It
+# wins over any plural noun in the sentence, because "sirf aik" in a question full of
+# plurals is still a request for one row. These are also part of RECOGNISED_PHRASES,
+# so the digits in "only 1" / "top 1" don't trip the "a specific number" refusal —
+# LIMIT 1 is something the templates can express.
+SINGULAR_HINTS = ("person", "who is", "who has", "kaun", "kis ki", "kis ka", "kon si", "kon sa")
 PLURAL_WORDS = ("employees", "people", "persons", "staff", "workers", "products", "items", "list")
 
 
 def wants_single_row(text):
+    if any(phrase in text for phrase in SINGLE_ROW_PHRASES):
+        return True
     if any_word_in(PLURAL_WORDS, text):
         return False
     if any(hint in text for hint in SINGULAR_HINTS):

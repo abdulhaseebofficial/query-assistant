@@ -211,3 +211,59 @@ class TestAiPathEndToEnd:
 
         body = client.get("/", query_string={"q": "employees earning more than 100000"}).get_data(as_text=True)
         assert "password_hash" not in body
+
+
+class TestSingleRowRequests:
+    """Asking for one and getting five isn't a wrong answer, but it isn't the answer.
+
+    The Roman Urdu forms matter here: "sirf aik ka" is how the question actually gets
+    asked, and it went unrecognised while the English "the highest paid employee"
+    worked.
+    """
+
+    ONE_ROW = [
+        "mujha data nikal kar doh highest salary ka bataye sirf aik ka",
+        "highest salary sirf ek",
+        "sabse zyada salary sirf aik",
+        "only one highest paid employee",
+        "just one highest paid",
+        "top 1 highest paid",
+        "the highest paid employee",
+        "highest salary person in this company",
+        "cheapest product only one",
+    ]
+
+    FIVE_ROWS = [
+        "highest paid employees",
+        "top earners",
+        "cheapest products",
+        "newest employees",
+    ]
+
+    @pytest.mark.parametrize("question", ONE_ROW)
+    def test_asking_for_one_returns_one(self, conn, question):
+        result = interpret(question, conn)
+
+        assert result is not None, "refused a question it can answer"
+        assert len(conn.execute(result["sql"], result["params"]).fetchall()) == 1
+
+    @pytest.mark.parametrize("question", ONE_ROW)
+    def test_the_explanation_does_not_promise_five(self, conn, question):
+        assert "5" not in interpret(question, conn)["explanation"]
+
+    @pytest.mark.parametrize("question", FIVE_ROWS)
+    def test_a_plural_question_still_returns_a_list(self, conn, question):
+        result = interpret(question, conn)
+
+        assert result is not None
+        assert len(conn.execute(result["sql"], result["params"]).fetchall()) == 5
+
+    @pytest.mark.parametrize("question", ["top 1 highest paid", "only 1 highest paid"])
+    def test_a_digit_meaning_one_is_not_refused_as_an_unsupported_number(self, conn, question):
+        """LIMIT 1 is expressible, so "top 1" must not hit the "a specific number" gate."""
+        assert unsupported_constraints(question) == []
+        assert interpret(question, conn) is not None
+
+    def test_a_digit_that_is_not_one_is_still_refused(self, conn):
+        """LIMIT 3 is not something these templates can express."""
+        assert interpret("top 3 highest paid", conn) is None
