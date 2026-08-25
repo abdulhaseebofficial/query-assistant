@@ -163,7 +163,21 @@
                     </div>
                 {% else %}
                     <div class="no-results">
-                    {% if not result.on_topic %}
+                    {% if result.wants_overview %}
+                        <p class="no-results-title">Which part of it?</p>
+                        <p>
+                            There's no single answer to "everything" — the company data lives in
+                            five separate tables. Pick one to start with:
+                        </p>
+                        <p class="no-results-hint">
+                            <a class="chip chip-sm" href="/?q=all+employees">employees</a>
+                            <a class="chip chip-sm" href="/?q=all+departments">departments</a>
+                            <a class="chip chip-sm" href="/?q=all+products">products</a>
+                            <a class="chip chip-sm" href="/?q=all+customers">customers</a>
+                            <a class="chip chip-sm" href="/?q=all+orders">orders</a>
+                        </p>
+
+                    {% elif not result.on_topic %}
                         <p class="no-results-title">That's not something this database can answer</p>
                         <p>It holds company data — try asking about <em>employees</em>, <em>departments</em>, <em>products</em>, <em>customers</em>, or <em>orders</em>.</p>
 

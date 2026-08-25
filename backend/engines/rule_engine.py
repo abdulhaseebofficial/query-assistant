@@ -9,19 +9,36 @@ import re
 
 from backend import db
 
+# Roman Urdu sits alongside English here rather than in a separate lookup, because
+# real questions mix the two freely ("IT walay employees", "sare products dikhao").
 EMPLOYEE_WORDS = {
-    "employee", "employees", "staff", "worker", "workers", "mulazim", "karyakar",
+    "employee", "employees", "staff", "worker", "workers", "mulazim", "mulazmeen", "karyakar",
     "salary", "salaries", "paid", "hired", "position",
     "earner", "earners", "earning", "earnings", "wage", "wages", "payroll",
+    "log", "logo", "logon", "banda", "bande", "kaam", "naukri", "tankhwah", "tankhwa",
+    "team", "teams",
 }
-DEPARTMENT_WORDS = {"department", "departments", "dept", "depts"}
-PRODUCT_WORDS = {"product", "products", "item", "items", "inventory", "stock"}
-CUSTOMER_WORDS = {"customer", "customers", "client", "clients"}
-ORDER_WORDS = {"order", "orders", "sale", "sales", "revenue", "purchase", "purchases", "transaction", "transactions"}
+DEPARTMENT_WORDS = {"department", "departments", "dept", "depts", "shuba", "shobay"}
+PRODUCT_WORDS = {
+    "product", "products", "item", "items", "inventory", "stock",
+    "saman", "samaan", "cheez", "cheezain", "cheezein", "maal",
+    "price", "prices", "qeemat", "keemat",
+}
+CUSTOMER_WORDS = {"customer", "customers", "client", "clients", "grahak", "graahak", "khareedar"}
+ORDER_WORDS = {
+    "order", "orders", "sale", "sales", "revenue", "purchase", "purchases",
+    "transaction", "transactions", "bikri", "farokht", "aamdani",
+}
 
-COUNT_PHRASES = ("how many", "count", "kitne", "kitni", "number of")
-SUM_PHRASES = ("total", "sum", "kul", "revenue")
+COUNT_PHRASES = ("how many", "count", "kitne", "kitni", "kitna", "number of")
+SUM_PHRASES = ("total", "sum", "kul", "revenue", "aamdani")
 AVG_PHRASES = ("average", "avg", "mean", "ausat")
+
+# "total kitni sales hui" contains both a sum word and a count word. Which one is
+# meant depends on the noun: you total an amount, you count a thing. Without this,
+# COUNT_PHRASES matched first and the answer was the count of orders under an
+# explanation that said so — right about what it did, wrong about what was asked.
+MONEY_WORDS = ("revenue", "sales", "salary", "salaries", "amount", "price", "aamdani", "tankhwah", "bikri")
 
 STATUS_WORDS = {
     "completed": "Completed", "complete": "Completed",
@@ -61,6 +78,8 @@ CHEAP_PHRASES = (
 DATE_PHRASES = (
     "today", "this month", "current month", "last month", "previous month",
     "this year", "current year",
+    "aaj", "aj ke", "aaj ke", "is mahine", "is maheene", "is month",
+    "pichle mahine", "pichhle mahine", "is saal", "is sal",
 )
 
 # Someone asking for exactly one row, in either language. See wants_single_row.
@@ -158,6 +177,23 @@ SINGULAR_HINTS = ("person", "who is", "who has", "kaun", "kis ki", "kis ka", "ko
 PLURAL_WORDS = ("employees", "people", "persons", "staff", "workers", "products", "items", "list")
 
 
+# "mujha sara data dikhayo company ka" is a fair question, and it was being told the
+# database can't answer it — which is untrue and unhelpful. There's no single query
+# behind "everything" (five tables, no sensible join), so the honest reply is to ask
+# which part, not to pretend the question was nonsense.
+OVERVIEW_PHRASES = (
+    "sara data", "saara data", "sab data", "sab kuch", "sabkuch", "poora data", "pura data",
+    "all the data", "all data", "everything", "the database", "whole database",
+    "entire database", "data dikhao", "data dikhayo", "company ka data", "company data",
+    "show me the data", "sari information", "saari maloomat",
+)
+
+
+def wants_overview(text):
+    """True when the question asks for the whole database rather than one part of it."""
+    return any(phrase in text for phrase in OVERVIEW_PHRASES)
+
+
 def wants_single_row(text):
     if any(phrase in text for phrase in SINGLE_ROW_PHRASES):
         return True
@@ -198,12 +234,19 @@ def detect_domain(text):
 
 
 def detect_aggregate(text):
-    if any_word_in(COUNT_PHRASES, text):
-        return "count"
-    if any_word_in(SUM_PHRASES, text):
-        return "sum"
+    counting = any_word_in(COUNT_PHRASES, text)
+    summing = any_word_in(SUM_PHRASES, text)
+
     if any_word_in(AVG_PHRASES, text):
         return "avg"
+    # A question naming both ("total kitni sales hui") is asking to total an amount,
+    # not to count rows — but only when there's an amount in it to total.
+    if counting and summing:
+        return "sum" if any_word_in(MONEY_WORDS, text) else "count"
+    if counting:
+        return "count"
+    if summing:
+        return "sum"
     return None
 
 
@@ -215,8 +258,15 @@ def find_match(options, text):
             # words ("it", "hr"), so only match with a disambiguating cue nearby.
             if not word_in(opt_lower, text):
                 continue
-            has_context = any_word_in(DEPARTMENT_WORDS, text) or re.search(
-                r"\bin\s+(the\s+)?" + re.escape(opt_lower) + r"\b", text
+            # Either an English preposition before it, or one of the Roman Urdu
+            # possessive/relative markers after it. Without the second form,
+            # "IT walay employees" matched none of these and the department filter
+            # was dropped in silence — every employee came back as the answer.
+            escaped = re.escape(opt_lower)
+            has_context = (
+                any_word_in(DEPARTMENT_WORDS, text)
+                or re.search(r"\b(in|of|from|at)\s+(the\s+)?" + escaped + r"\b", text)
+                or re.search(escaped + r"\s+(walay|wale|wali|walon|walo|ke|ki|ka|team)\b", text)
             )
             if has_context:
                 return option
@@ -281,7 +331,17 @@ def build_employees_query(text, aggregate, ref):
     return sql, params, explanation
 
 
-def build_departments_query(_text, _aggregate, _ref):
+def build_departments_query(_text, aggregate, _ref):
+    # This builder used to ignore `aggregate` entirely, so "kitne departments hain"
+    # — how many departments — was answered with the full list. The explanation then
+    # described a listing nobody had asked for.
+    if aggregate == "count":
+        return (
+            "SELECT COUNT(*) AS count FROM departments;",
+            [],
+            "Counts how many departments the company has.",
+        )
+
     sql = (
         "SELECT d.name, d.location, d.manager_name, COUNT(e.id) AS employee_count "
         "FROM departments d LEFT JOIN employees e ON e.department_id = d.id "
@@ -371,13 +431,13 @@ def build_orders_query(text, aggregate, ref):
             break
 
     date_filter = None
-    if "today" in text:
+    if any(p in text for p in ("today", "aaj", "aj ke", "aaj ke")):
         date_filter = "today"
-    elif "this month" in text or "current month" in text:
+    elif any(p in text for p in ("this month", "current month", "is mahine", "is maheene", "is month")):
         date_filter = "this_month"
-    elif "last month" in text or "previous month" in text:
+    elif any(p in text for p in ("last month", "previous month", "pichle mahine", "pichhle mahine")):
         date_filter = "last_month"
-    elif "this year" in text or "current year" in text:
+    elif any(p in text for p in ("this year", "current year", "is saal", "is sal")):
         date_filter = "this_year"
 
     customer = find_match(ref["customer_names"], text)

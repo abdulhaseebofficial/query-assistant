@@ -1,6 +1,6 @@
 # tests/
 
-The automated checks that run on every push and pull request. 295 tests, about five seconds,
+The automated checks that run on every push and pull request. 352 tests, about six seconds,
 no network access and no API key required.
 
 ```bash
@@ -49,6 +49,14 @@ routes every path to the one function, that `DATA_DIR` moves every written path 
 writable, and that importing `api/index.py` into an empty directory seeds the database and
 serves a real answer. The cold-start tests run in a subprocess because `config.py` reads
 the environment once at import.
+
+**`test_roman_urdu.py`** — questions asked the way they're actually asked here, in
+Roman Urdu or mixed with English. Every case in it was found by asking the running app a
+real question and noticing the answer was wrong. Three kinds of wrong: refused because a
+word like "grahak" wasn't in the vocabulary; answered from the wrong table; or — the
+dangerous one — answered from the right table with the filter silently dropped, so "IT
+walay employees" returned all eighteen employees under the explanation "Lists all
+employees".
 
 **`test_honest_answers.py`** — the rule engine must decline what it can't express.
 Every builder ends in a catch-all "list everything" branch, so before this was gated the
