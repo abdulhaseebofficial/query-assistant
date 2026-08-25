@@ -6,8 +6,6 @@ SQLite/PostgreSQL database, and renders the result as a table, chart, and CSV
 export. See README.md for the request flow and the production checklist.
 """
 
-import csv
-import io
 import os
 import re
 import secrets
@@ -29,6 +27,7 @@ from backend.engines import ai_engine
 from backend.engines.csv_engine import build_custom_query, clear_dataset, get_dataset_info, load_csv
 from backend.engines.rule_engine import interpret
 from backend.utils import chart_utils
+from backend.utils.csv_export import build_csv
 
 app = Flask(__name__, template_folder=TEMPLATE_DIR, static_folder=STATIC_DIR)
 app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024  # 5 MB upload cap
@@ -60,12 +59,30 @@ csrf = CSRFProtect(app)
 # auth endpoints below to slow down credential-stuffing / brute-force attempts.
 limiter = Limiter(get_remote_address, app=app, default_limits=["200 per minute"], storage_uri="memory://")
 
+# Asking a question can mean a billable AI API call, and exporting re-runs the whole
+# query — so the 200/minute default is far too loose for these. Uploading and
+# connecting are rarer still, and each one writes to disk or opens an outbound
+# connection, so they get the tightest ceiling.
+QUERY_LIMIT = "30 per minute"
+EXPORT_LIMIT = "20 per minute"
+DATASOURCE_LIMIT = "10 per minute"
+
 
 @app.after_request
 def set_security_headers(response):
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    # Nothing in this app uses a camera, mic, or location — say so, so a future
+    # injected script can't quietly ask for them either.
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+
+    # Only sent when we've been told we're behind HTTPS. Sending HSTS over plain
+    # http:// during local development would pin the browser to https://localhost
+    # and make the app unreachable until the user cleared the policy by hand.
+    if app.config["SESSION_COOKIE_SECURE"]:
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
         "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
@@ -103,6 +120,20 @@ def get_connection():
     conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row
     return conn
+
+
+def _attachment_header(filename):
+    """Build a Content-Disposition value that can't break out of the header.
+
+    Table names come from the connected database's own schema, and SQLite happily
+    allows quotes, semicolons, and newlines in them — none of which belong in a
+    response header. Anything outside a conservative set is replaced.
+    """
+    safe = re.sub(r"[^A-Za-z0-9._-]", "_", filename)
+    # Collapse dot runs and drop leading dots so the result can't read as a
+    # relative path or a hidden file wherever the browser saves it.
+    safe = re.sub(r"\.{2,}", ".", safe).lstrip(".")[:100] or "results.csv"
+    return f'attachment; filename="{safe}"'
 
 
 def sql_for_display(sql, params):
@@ -219,6 +250,7 @@ def run_query(user_input):
 
 
 @app.route("/", methods=["GET"])
+@limiter.limit(QUERY_LIMIT)
 def index():
     user_input = request.args.get("q", "").strip()
     result = None
@@ -244,6 +276,7 @@ def index():
 
 
 @app.route("/export", methods=["GET"])
+@limiter.limit(EXPORT_LIMIT)
 def export():
     user_input = request.args.get("q", "").strip()
     outcome = run_query(user_input) if user_input else None
@@ -253,19 +286,15 @@ def export():
     if not outcome["rows"]:
         return Response("No matching data to export.", status=404, mimetype="text/plain")
 
-    buffer = io.StringIO()
-    writer = csv.DictWriter(buffer, fieldnames=outcome["columns"])
-    writer.writeheader()
-    writer.writerows(outcome["rows"])
-
     return Response(
-        buffer.getvalue(),
+        build_csv(outcome["columns"], outcome["rows"]),
         mimetype="text/csv",
         headers={"Content-Disposition": "attachment; filename=query_results.csv"},
     )
 
 
 @app.route("/upload", methods=["GET", "POST"])
+@limiter.limit(DATASOURCE_LIMIT, methods=["POST"])
 def upload():
     error = None
 
@@ -377,6 +406,7 @@ def run_connected_query(source, placeholder, kind, table, user_input):
 
 
 @app.route("/connect-db", methods=["GET", "POST"])
+@limiter.limit(DATASOURCE_LIMIT, methods=["POST"])
 def connect_db():
     error = None
 
@@ -403,6 +433,7 @@ def connect_db():
 
 
 @app.route("/connect-db/postgres", methods=["POST"])
+@limiter.limit(DATASOURCE_LIMIT)
 def connect_db_postgres():
     dsn = request.form.get("dsn", "")
     error = None
@@ -429,6 +460,7 @@ def connect_db_clear():
 
 
 @app.route("/connect-db/<table_name>", methods=["GET"])
+@limiter.limit(QUERY_LIMIT)
 def connect_db_table(table_name):
     source, placeholder, kind = get_active_source()
     table = source.get_table(table_name) if source else None
@@ -457,6 +489,7 @@ def connect_db_table(table_name):
 
 
 @app.route("/connect-db/<table_name>/export", methods=["GET"])
+@limiter.limit(EXPORT_LIMIT)
 def connect_db_table_export(table_name):
     source, placeholder, kind = get_active_source()
     table = source.get_table(table_name) if source else None
@@ -471,19 +504,15 @@ def connect_db_table_export(table_name):
     if not outcome["rows"]:
         return Response("No matching data to export.", status=404, mimetype="text/plain")
 
-    buffer = io.StringIO()
-    writer = csv.DictWriter(buffer, fieldnames=outcome["columns"])
-    writer.writeheader()
-    writer.writerows(outcome["rows"])
-
     return Response(
-        buffer.getvalue(),
+        build_csv(outcome["columns"], outcome["rows"]),
         mimetype="text/csv",
-        headers={"Content-Disposition": f"attachment; filename={table_name}_results.csv"},
+        headers={"Content-Disposition": _attachment_header(f"{table_name}_results.csv")},
     )
 
 
 @app.route("/dataset", methods=["GET"])
+@limiter.limit(QUERY_LIMIT)
 def dataset():
     conn = get_connection()
     meta = get_dataset_info(conn)
@@ -512,6 +541,7 @@ def dataset():
 
 
 @app.route("/dataset/export", methods=["GET"])
+@limiter.limit(EXPORT_LIMIT)
 def dataset_export():
     conn = get_connection()
     meta = get_dataset_info(conn)
@@ -527,13 +557,8 @@ def dataset_export():
     if not outcome["rows"]:
         return Response("No matching data to export.", status=404, mimetype="text/plain")
 
-    buffer = io.StringIO()
-    writer = csv.DictWriter(buffer, fieldnames=outcome["columns"])
-    writer.writeheader()
-    writer.writerows(outcome["rows"])
-
     return Response(
-        buffer.getvalue(),
+        build_csv(outcome["columns"], outcome["rows"]),
         mimetype="text/csv",
         headers={"Content-Disposition": "attachment; filename=dataset_results.csv"},
     )

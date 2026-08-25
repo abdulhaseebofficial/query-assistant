@@ -1,6 +1,6 @@
 # tests/
 
-The automated checks that run on every push and pull request. 102 tests, about two seconds,
+The automated checks that run on every push and pull request. 158 tests, about four seconds,
 no network access and no API key required.
 
 ```bash
@@ -35,6 +35,17 @@ through the database.
 
 **`test_chart_utils.py`** — when a result set is worth drawing and when it isn't. Notably:
 `id` columns are numeric but plotting them is meaningless, and a single row is not a chart.
+
+**`test_security.py`** — one test per real finding, so a failure means a defence was
+removed rather than a style rule broken. Covers CSV formula injection (a cell like
+`=cmd|'/c calc.exe'!A0` executing when someone opens the downloaded file), the SSRF guard
+that stops the Postgres connector being aimed at `127.0.0.1` or cloud metadata,
+quote-escaping of table names taken from an uploaded database, header injection through
+`Content-Disposition`, the response security headers, and the rate limits.
+
+**`test_ai_providers.py`** — which AI provider gets picked, and every path where one is
+unavailable. No network calls: the selection logic and failure handling are what's under
+test.
 
 **`test_app.py`** — the routes themselves, through Flask's test client. Pages render,
 CSV export returns an attachment, the security headers are on every response, `/history`

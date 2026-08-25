@@ -61,11 +61,39 @@ def test_database():
 
 @pytest.fixture
 def client():
+    """A test client with rate limiting off.
+
+    The limits are per-IP and every test shares one, so leaving them on would make
+    the suite's pass/fail depend on how many tests happened to run before it.
+    `rate_limited_client` turns them back on for the tests that are about the
+    limits themselves.
+    """
     from backend.app import app as flask_app
+    from backend.app import limiter
 
     flask_app.config.update(TESTING=True, WTF_CSRF_ENABLED=False)
-    with flask_app.test_client() as test_client:
-        yield test_client
+    limiter.enabled = False
+    try:
+        with flask_app.test_client() as test_client:
+            yield test_client
+    finally:
+        limiter.enabled = True
+
+
+@pytest.fixture
+def rate_limited_client():
+    """A test client with rate limiting on, and a clean counter to start from."""
+    from backend.app import app as flask_app
+    from backend.app import limiter
+
+    flask_app.config.update(TESTING=True, WTF_CSRF_ENABLED=False)
+    limiter.enabled = True
+    limiter.reset()
+    try:
+        with flask_app.test_client() as test_client:
+            yield test_client
+    finally:
+        limiter.reset()
 
 
 @pytest.fixture

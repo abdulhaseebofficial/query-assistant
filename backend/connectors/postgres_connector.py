@@ -7,14 +7,22 @@ see the "Known limitations" section in README.md — not something to "fix" by
 guessing at a different storage scheme.
 """
 
+import ipaddress
 import json
 import os
+import socket
+from urllib.parse import unquote, urlparse
 
 import psycopg2
 import psycopg2.extras
 
 from backend.config import POSTGRES_CONFIG_PATH as CONFIG_PATH
 from backend.config import UPLOAD_DIR
+
+# Connecting to a private address is normal when you run Postgres on your own
+# machine, and a server-side request forgery primitive when the app is reachable
+# by anyone else. Off by default; set ALLOW_PRIVATE_DB_HOSTS=true for local use.
+ALLOW_PRIVATE_HOSTS = os.environ.get("ALLOW_PRIVATE_DB_HOSTS", "").strip().lower() in ("1", "true", "yes")
 
 
 def is_connected():
@@ -36,11 +44,94 @@ def _friendly_connection_error(exc):
     return "Couldn't connect to that database. Double-check your connection string and try again."
 
 
+def _host_from_dsn(dsn):
+    """Pull the host out of either DSN form psycopg2 accepts."""
+    if "://" in dsn:
+        parsed = urlparse(dsn)
+        return unquote(parsed.hostname) if parsed.hostname else None
+
+    # keyword/value form: "host=db.example.com port=5432 dbname=..."
+    for part in dsn.split():
+        key, sep, value = part.partition("=")
+        if sep and key.strip().lower() == "host":
+            return value.strip().strip("'\"")
+    return None
+
+
+def _resolves_to_private_address(host):
+    """True if `host` points anywhere inside this machine or its private network.
+
+    Resolution happens here rather than trusting the literal text, so a hostname
+    that an attacker points at 127.0.0.1 is caught too. A host that doesn't
+    resolve is treated as non-private — the connection attempt will fail on its
+    own, and refusing to look it up would just produce a worse error message.
+    """
+    try:
+        infos = socket.getaddrinfo(host, None)
+    except socket.gaierror:
+        return False
+
+    for info in infos:
+        try:
+            ip = ipaddress.ip_address(info[4][0])
+        except ValueError:
+            continue
+        if (
+            ip.is_private
+            or ip.is_loopback
+            or ip.is_link_local
+            or ip.is_reserved
+            or ip.is_multicast
+            or ip.is_unspecified
+        ):
+            return True
+    return False
+
+
+def check_dsn_target(dsn):
+    """Raise ValueError if this DSN points at an address we refuse to dial.
+
+    Without this, /connect-db/postgres is an open port scanner: anyone who can
+    reach the app can aim it at 127.0.0.1, a RFC1918 range, or 169.254.169.254
+    (cloud instance metadata) and read the network's shape off the distinct
+    "connection refused" / "timed out" / "authentication failed" replies.
+    """
+    if ALLOW_PRIVATE_HOSTS:
+        return
+
+    host = _host_from_dsn(dsn)
+    if host is None:
+        # No host at all means a local Unix socket / default localhost connection.
+        raise ValueError(
+            "That connection string has no host. Connecting to a local database is "
+            "disabled by default — set ALLOW_PRIVATE_DB_HOSTS=true to allow it."
+        )
+
+    if _resolves_to_private_address(host):
+        raise ValueError(
+            f"Refusing to connect to '{host}': it resolves to a private or loopback "
+            "address. If you're running the database on this machine or network, set "
+            "ALLOW_PRIVATE_DB_HOSTS=true in your .env to allow it."
+        )
+
+
 def _connect(dsn):
     try:
         return psycopg2.connect(dsn, cursor_factory=psycopg2.extras.RealDictCursor, connect_timeout=8)
     except psycopg2.OperationalError as exc:
         raise ValueError(_friendly_connection_error(exc)) from exc
+
+
+def _quote_ident(name):
+    """Quote a schema-supplied identifier for interpolation into SQL.
+
+    Table names can't be bound as parameters, so they get interpolated — and a
+    table name is not automatically safe just because it came from the database's
+    own catalogue. Both SQLite and PostgreSQL allow a double quote inside an
+    identifier, which would otherwise close the quoting early and let the rest of
+    the name be read as SQL. Doubling the quote is the escape both engines define.
+    """
+    return '"' + name.replace('"', '""') + '"'
 
 
 def _list_tables_with(conn):
@@ -54,7 +145,7 @@ def _list_tables_with(conn):
 
     tables = []
     for name in names:
-        cur.execute(f'SELECT COUNT(*) AS count FROM "{name}"')
+        cur.execute(f"SELECT COUNT(*) AS count FROM {_quote_ident(name)}")
         count = cur.fetchone()["count"]
         cur.execute(
             "SELECT column_name, data_type FROM information_schema.columns "
@@ -77,6 +168,7 @@ def save_connection(dsn):
     if not dsn:
         raise ValueError("Please paste a connection string.")
 
+    check_dsn_target(dsn)
     conn = _connect(dsn)
     try:
         tables = _list_tables_with(conn)

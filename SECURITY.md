@@ -33,6 +33,13 @@ a report.
 | Username enumeration by timing | Password verification runs against a dummy hash when the user doesn't exist | `backend/auth.py` |
 | Password storage | `werkzeug.security` hashing — plaintext passwords are never stored | `backend/auth.py` |
 | Clickjacking / MIME sniffing / XSS | `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, and a Content-Security-Policy on every response | `backend/app.py`, `tests/test_app.py` |
+| Spreadsheet formula injection in CSV exports | Cells beginning `=` `+` `-` `@` `	` `` are prefixed with `'`, so Excel/Sheets read them as text instead of executing them | `backend/utils/csv_export.py`, `tests/test_security.py` |
+| SSRF / internal port scanning via a Postgres DSN | Hostnames are resolved and refused if they land on loopback, RFC1918, link-local, or `169.254.169.254`; opt out with `ALLOW_PRIVATE_DB_HOSTS=true` | `backend/connectors/postgres_connector.py`, `tests/test_security.py` |
+| SQL identifier injection from a hostile schema | Table names from an uploaded database are quote-escaped before interpolation — a name can legally contain `"` | `backend/connectors/`, `tests/test_security.py` |
+| Response-header injection via a table name | `Content-Disposition` filenames are stripped to `[A-Za-z0-9._-]`, dot runs collapsed, length capped | `backend/app.py`, `tests/test_security.py` |
+| Cost and capacity abuse | Per-endpoint limits above the global ceiling: 30/min on querying (each one can be a billable AI call), 20/min on exports, 10/min on uploads and database connections | `backend/app.py` |
+| Downgrade to plain HTTP | `Strict-Transport-Security` once `SESSION_COOKIE_SECURE=true`; omitted otherwise so local `http://` still works | `backend/app.py` |
+| Unwanted device access | `Permissions-Policy` denies camera, microphone, geolocation, payment, and USB | `backend/app.py` |
 | Oversized uploads | 5 MB request cap, handled with a friendly 413 page rather than a stack trace | `backend/app.py` |
 | Arbitrary code execution via the debugger | `FLASK_DEBUG` defaults to `false` and must be opted into explicitly | `run.py` |
 
@@ -57,5 +64,13 @@ Be aware of these before deploying this anywhere public:
   unset to keep everything on your machine.
 - **API keys live in `.env`,** which is git-ignored but unencrypted. Rotate a key
   immediately if it's ever pasted into a chat, a screenshot, or a commit.
+- **The data-source endpoints are open to anonymous visitors.** `/upload`,
+  `/connect-db`, `/dataset/clear`, and `/connect-db/clear` deliberately work without an
+  account, because the whole app is usable logged-out. On a public deployment that means
+  *any* visitor can replace or wipe the active dataset for everyone else. `/history` is
+  the only route behind a login. If you deploy this somewhere reachable, put it behind
+  authentication at the proxy, or add `@login_required` to those four routes.
 - **There is no multi-tenancy.** An uploaded CSV replaces the previous one for everyone
   using that instance. This is built as a single-user / demo app.
+- **`ALLOW_PRIVATE_DB_HOSTS=true` re-opens the SSRF path.** It's the right setting for a
+  laptop talking to a local Postgres, and the wrong one for anything internet-facing.

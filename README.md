@@ -11,7 +11,7 @@ database, a CSV you upload, or your own SQLite / PostgreSQL database.
 [![CI](https://github.com/abdulhaseebofficial/query-assistant/actions/workflows/ci.yml/badge.svg)](https://github.com/abdulhaseebofficial/query-assistant/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/Flask-3.0-000000?logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
-[![Tests](https://img.shields.io/badge/tests-102%20passing-3fb950)](tests/)
+[![Tests](https://img.shields.io/badge/tests-158%20passing-3fb950)](tests/)
 [![Ruff](https://img.shields.io/badge/lint-ruff-261230?logo=ruff&logoColor=white)](https://docs.astral.sh/ruff/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
@@ -160,7 +160,7 @@ query-assistant/
 │   ├── templates/               # Jinja2 templates (+ partials/)
 │   └── static/css/              # Stylesheets
 │
-├── tests/                    # 102 tests, ~2s, no network — tests/README.md
+├── tests/                    # 158 tests, ~2s, no network — tests/README.md
 ├── data/                     # Runtime data, git-ignored — data/README.md
 ├── docs/screenshots/         # Images used by this README
 ├── run.py                    # Entry point
@@ -180,14 +180,15 @@ and fill in what you need.
 | `AI_PROVIDER` | auto | `gemini` or `anthropic`. Leave blank to pick automatically (Gemini first); set it to pin one provider while both keys stay in `.env`. |
 | `GEMINI_MODEL` / `ANTHROPIC_MODEL` | `gemini-2.5-flash` / `claude-opus-5` | Move to a newer model without touching the code. |
 | `FLASK_DEBUG` | `false` | Auto-reload and interactive tracebacks. **Never `true` in production** — Flask's debugger allows arbitrary code execution if it is reachable. |
-| `SESSION_COOKIE_SECURE` | `false` | Set to `true` once you are serving over HTTPS, so cookies are marked `Secure`. Defaults off so local `http://` development works. |
+| `SESSION_COOKIE_SECURE` | `false` | Set to `true` once you are serving over HTTPS, so cookies are marked `Secure` and HSTS is sent. Defaults off so local `http://` development works. |
+| `ALLOW_PRIVATE_DB_HOSTS` | `false` | Allows PostgreSQL connections to localhost / private networks. Needed to connect a database on your own machine; leave off for anything internet-facing (see [SECURITY.md](SECURITY.md)). |
 
 ## Tests
 
 ```bash
 pip install -r requirements.txt -r requirements-dev.txt
 
-pytest              # 102 tests, about two seconds
+pytest              # 158 tests, about four seconds
 ruff check .        # lint
 ```
 
@@ -208,13 +209,16 @@ Full detail — including known limitations worth reading before deploying this 
 public — is in [SECURITY.md](SECURITY.md). The short version:
 
 - User input is **never** concatenated into SQL. Engines return `(sql, params)` and values
-  are bound. There are tests asserting this.
+  are bound. Identifiers that can't be bound are quote-escaped. There are tests asserting both.
 - Model-generated SQL is validated before execution: one read-only `SELECT`, no stacked
   statements, whitelisted tables only.
 - CSRF protection on every state-changing request; rate limits on `/login` and `/register`;
   password hashing via `werkzeug.security`; login verification that runs against a dummy
   hash for unknown users, so response timing doesn't leak which usernames exist.
 - `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, and a CSP on every response.
+- CSV exports neutralise spreadsheet formula injection; `Content-Disposition` filenames
+  are sanitised; PostgreSQL DSNs pointing at private or loopback addresses are refused
+  by default.
 - The Flask debugger is off unless you explicitly opt in.
 
 Found something? Please report it privately — see [SECURITY.md](SECURITY.md).
