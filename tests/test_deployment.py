@@ -109,7 +109,7 @@ class TestColdStart:
             "m.app.config.update(TESTING=True);"
             "r = m.app.test_client().get('/?q=highest+paid+employees');"
             "body = r.get_data(as_text=True);"
-            "print(r.status_code, 'Fatima Sheikh' in body, 'Demo deployment.' in body)"
+            "print(r.status_code, 'Fatima Sheikh' in body, 'Temporary storage.' in body)"
         )
 
         assert result.returncode == 0, result.stderr
@@ -118,7 +118,7 @@ class TestColdStart:
 
 class TestEphemeralNotice:
     def test_the_notice_is_absent_on_a_normal_deployment(self, client):
-        assert "Demo deployment." not in client.get("/").get_data(as_text=True)
+        assert "Temporary storage." not in client.get("/").get_data(as_text=True)
 
     def test_the_notice_appears_when_storage_is_declared_temporary(self, client, monkeypatch):
         """Someone about to register an account needs to know it won't survive."""
@@ -127,4 +127,4 @@ class TestEphemeralNotice:
         monkeypatch.setattr(bapp, "EPHEMERAL_STORAGE", True)
         body = client.get("/register").get_data(as_text=True)
 
-        assert "Demo deployment." in body
+        assert "Temporary storage." in body

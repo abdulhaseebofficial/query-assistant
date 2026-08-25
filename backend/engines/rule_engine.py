@@ -12,6 +12,7 @@ from backend import db
 EMPLOYEE_WORDS = {
     "employee", "employees", "staff", "worker", "workers", "mulazim", "karyakar",
     "salary", "salaries", "paid", "hired", "position",
+    "earner", "earners", "earning", "earnings", "wage", "wages", "payroll",
 }
 DEPARTMENT_WORDS = {"department", "departments", "dept", "depts"}
 PRODUCT_WORDS = {"product", "products", "item", "items", "inventory", "stock"}
@@ -28,20 +29,54 @@ STATUS_WORDS = {
     "cancelled": "Cancelled", "canceled": "Cancelled",
 }
 
-# Every phrase the builders below actually encode into SQL. Kept as one list so
-# `unsupported_constraints` can subtract it from a question and look at what's left.
+# The phrases each builder encodes, defined once and used in two places: the builder
+# that acts on them, and RECOGNISED_PHRASES below. They used to be written out
+# separately in both, which is exactly how "highest salary" came to be refused while
+# "highest paid" worked — the builder was narrow and nobody could see it from the gate.
+TOP_PAID_PHRASES = (
+    "highest paid", "top paid", "best paid", "most paid", "highest salary", "top salary",
+    "biggest salary", "maximum salary", "max salary", "highest earning", "highest earner",
+    "top earner", "top earners", "best earning", "highest wage",
+    "sabse zyada salary", "sab se zyada salary",
+)
+LOWEST_PAID_PHRASES = (
+    "lowest paid", "least paid", "worst paid", "lowest salary", "smallest salary",
+    "minimum salary", "min salary", "lowest earning", "lowest earner", "lowest wage",
+    "sabse kam salary", "sab se kam salary",
+)
+NEWEST_PHRASES = ("newest", "recently hired", "new joiners", "recent hires", "latest hires")
+
+LOW_STOCK_PHRASES = (
+    "low stock", "low on stock", "low in stock", "out of stock", "running low", "kam stock",
+)
+EXPENSIVE_PHRASES = (
+    "most expensive", "expensive", "costly", "priciest", "highest price", "highest priced",
+    "top price", "dearest", "sabse mehnga", "sab se mehnga",
+)
+CHEAP_PHRASES = (
+    "least expensive", "cheapest", "cheap", "affordable", "budget", "lowest price",
+    "lowest priced", "sasta", "sabse sasta", "sab se sasta",
+)
+
+DATE_PHRASES = (
+    "today", "this month", "current month", "last month", "previous month",
+    "this year", "current year",
+)
+
+# Everything above, plus the aggregate and status words — what a question may contain
+# without the engine having to admit it's guessing.
 RECOGNISED_PHRASES = (
     COUNT_PHRASES
     + SUM_PHRASES
     + AVG_PHRASES
     + tuple(STATUS_WORDS)
-    # build_employees_query
-    + ("highest paid", "top paid", "best paid", "most paid", "newest", "recently hired", "new joiners", "recent hires")
-    # build_products_query
-    + ("low stock", "low on stock", "low in stock", "out of stock", "running low", "kam stock")
-    + ("most expensive", "least expensive", "expensive", "costly", "priciest", "cheap", "affordable", "budget")
-    # build_orders_query
-    + ("today", "this month", "current month", "last month", "previous month", "this year", "current year")
+    + TOP_PAID_PHRASES
+    + LOWEST_PAID_PHRASES
+    + NEWEST_PHRASES
+    + LOW_STOCK_PHRASES
+    + EXPENSIVE_PHRASES
+    + CHEAP_PHRASES
+    + DATE_PHRASES
 )
 
 # A question can name a constraint these fixed templates have no way to express —
@@ -103,6 +138,20 @@ def any_word_in(words, text):
     return any(word_in(w, text) for w in words)
 
 
+# "the highest paid employee" wants one row; "highest paid employees" wants a list.
+# Returning five for the first isn't wrong, but it isn't the answer either.
+SINGULAR_HINTS = ("person", "who is", "who has", "kaun", "kis ki", "kis ka", "single")
+PLURAL_WORDS = ("employees", "people", "persons", "staff", "workers", "products", "items", "list")
+
+
+def wants_single_row(text):
+    if any_word_in(PLURAL_WORDS, text):
+        return False
+    if any(hint in text for hint in SINGULAR_HINTS):
+        return True
+    return any_word_in(("employee", "worker", "product", "item", "customer"), text)
+
+
 def get_reference_data(conn):
     departments = [r[0] for r in conn.execute("SELECT name FROM departments").fetchall()]
     categories = [r[0] for r in conn.execute("SELECT DISTINCT category FROM products").fetchall()]
@@ -162,8 +211,9 @@ def find_match(options, text):
 
 def build_employees_query(text, aggregate, ref):
     department = find_match(ref["departments"], text)
-    top_paid = any(p in text for p in ("highest paid", "top paid", "best paid", "most paid"))
-    newest = any(p in text for p in ("newest", "recently hired", "new joiners", "recent hires"))
+    top_paid = any(p in text for p in TOP_PAID_PHRASES)
+    lowest_paid = any(p in text for p in LOWEST_PAID_PHRASES)
+    newest = any(p in text for p in NEWEST_PHRASES)
 
     where_sql = ""
     params = []
@@ -188,14 +238,22 @@ def build_employees_query(text, aggregate, ref):
     else:
         order_sql = " ORDER BY e.name"
         limit_sql = ""
+        count = 1 if wants_single_row(text) else 5
+        noun = "employee" if count == 1 else "employees"
+        prefix = "The" if count == 1 else f"Lists the {count}"
+
         if top_paid:
             order_sql = " ORDER BY e.salary DESC"
-            limit_sql = " LIMIT 5"
-            explanation = f"Lists the 5 highest-paid employees{explanation_filter}."
+            limit_sql = f" LIMIT {count}"
+            explanation = f"{prefix} highest-paid {noun}{explanation_filter}."
+        elif lowest_paid:
+            order_sql = " ORDER BY e.salary ASC"
+            limit_sql = f" LIMIT {count}"
+            explanation = f"{prefix} lowest-paid {noun}{explanation_filter}."
         elif newest:
             order_sql = " ORDER BY e.hire_date DESC"
-            limit_sql = " LIMIT 5"
-            explanation = f"Lists the 5 most recently hired employees{explanation_filter}."
+            limit_sql = f" LIMIT {count}"
+            explanation = f"{prefix} most recently hired {noun}{explanation_filter}."
         else:
             explanation = f"Lists all employees{explanation_filter or ''}, sorted by name."
 
@@ -219,11 +277,11 @@ def build_departments_query(text, aggregate, ref):
 
 def build_products_query(text, aggregate, ref):
     category = find_match(ref["categories"], text)
-    low_stock = any(
-        p in text for p in ("low stock", "low on stock", "low in stock", "out of stock", "running low", "kam stock")
-    )
-    expensive = any(p in text for p in ("expensive", "costly", "most expensive", "priciest"))
-    cheap = any(p in text for p in ("cheap", "affordable", "budget", "least expensive"))
+    low_stock = any(p in text for p in LOW_STOCK_PHRASES)
+    # Cheap is checked first: "least expensive" contains "expensive", so testing the
+    # other way round would sort the answer backwards.
+    cheap = any(p in text for p in CHEAP_PHRASES)
+    expensive = not cheap and any(p in text for p in EXPENSIVE_PHRASES)
 
     where_sql = ""
     params = []
@@ -248,14 +306,18 @@ def build_products_query(text, aggregate, ref):
     else:
         order_sql = " ORDER BY name"
         limit_sql = ""
+        count = 1 if wants_single_row(text) else 5
+        noun = "product" if count == 1 else "products"
+        prefix = "The" if count == 1 else f"Lists the {count}"
+
         if expensive:
             order_sql = " ORDER BY price DESC"
-            limit_sql = " LIMIT 5"
-            explanation = "Lists the 5 most expensive products."
+            limit_sql = f" LIMIT {count}"
+            explanation = f"{prefix} most expensive {noun}."
         elif cheap:
             order_sql = " ORDER BY price ASC"
-            limit_sql = " LIMIT 5"
-            explanation = "Lists the 5 cheapest products."
+            limit_sql = f" LIMIT {count}"
+            explanation = f"{prefix} cheapest {noun}."
         else:
             explanation = f"Lists all products{explanation_filter or ''}, sorted by name."
 

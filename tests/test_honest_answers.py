@@ -25,7 +25,6 @@ UNANSWERABLE = [
     ("orders placed before March", "a date range"),
     ("employees per department", "a grouping"),
     ("products under 100 rupees", "a comparison"),
-    ("the lowest paid employee", "a ranking"),
     ("customers without any orders", "a negation"),
     ("revenue for each product", "a grouping"),
 ]
@@ -38,6 +37,9 @@ ANSWERABLE = [
     "products low on stock",
     "most expensive products",
     "cheapest products",
+    "the lowest paid employee",
+    "highest salary person in this company",
+    "top earners",
     "customers in Lahore",
     "total revenue this month",
     "pending orders",
