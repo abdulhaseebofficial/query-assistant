@@ -1,92 +1,243 @@
+<div align="center">
+
 # Query Assistant
 
-Ask questions about your data in plain English (or Roman Urdu) — the app translates them into SQL, runs the query, and shows you both the result and the generated SQL. Works against a built-in demo database, an uploaded CSV, or an external SQLite/PostgreSQL database.
+**Ask a question in plain English. Get back real SQL, the answer, and a chart.**
 
-## Project Structure
+Type *"highest paid employees"* and the app writes the `SELECT`, runs it, shows you the rows,
+and hands you the query so you can learn from it or reuse it. Works against a built-in demo
+database, a CSV you upload, or your own SQLite / PostgreSQL database.
 
-Every folder below has its own `README.md` with a plain-English explanation of what's inside it and why — click through to whichever folder you're curious about.
+[![CI](https://github.com/abdulhaseebofficial/query-assistant/actions/workflows/ci.yml/badge.svg)](https://github.com/abdulhaseebofficial/query-assistant/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![Flask](https://img.shields.io/badge/Flask-3.0-000000?logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
+[![Tests](https://img.shields.io/badge/tests-82%20passing-3fb950)](tests/)
+[![Ruff](https://img.shields.io/badge/lint-ruff-261230?logo=ruff&logoColor=white)](https://docs.astral.sh/ruff/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-```
-sql-project/
-├── backend/                 # Flask application (Python) — see backend/README.md
-│   ├── app.py                # Routes, request handling, view logic
-│   ├── config.py             # Central path configuration
-│   ├── database.py           # Demo database schema + seed data
-│   ├── auth.py                # User accounts, login, query history
-│   ├── engines/               # Natural-language → SQL engines — see backend/engines/README.md
-│   │   ├── ai_engine.py          # Claude-powered SQL generation (optional)
-│   │   ├── rule_engine.py        # Rule-based fallback for the demo schema
-│   │   └── csv_engine.py         # Query builder for uploaded CSV data
-│   ├── connectors/            # External data source adapters — see backend/connectors/README.md
-│   │   ├── sqlite_connector.py   # Connect an uploaded .db/.sqlite file
-│   │   └── postgres_connector.py # Connect via a PostgreSQL DSN
-│   ├── content/                # see backend/content/README.md
-│   │   └── learn_content.py      # Static content for the "Learn SQL" page
-│   └── utils/                  # see backend/utils/README.md
-│       └── chart_utils.py        # Turns query results into chart-ready data
-│
-├── frontend/                 # Everything rendered in the browser — see frontend/README.md
-│   ├── templates/             # Jinja2 HTML templates
-│   │   └── partials/             # Shared fragments (_nav.html, _chart.html)
-│   └── static/
-│       └── css/                  # Stylesheets
-│
-├── data/                     # Runtime data, git-ignored — see data/README.md
-│   ├── company.db                # Demo SQLite database
-│   └── uploads/                   # Uploaded CSVs / connected databases
-│
-├── run.py                    # Application entry point
-├── requirements.txt
-├── .env.example
-└── .gitignore
-```
+<img src="docs/screenshots/query-result.png" alt="Query Assistant showing the results and generated SQL for the question 'highest paid employees'" width="100%">
 
-## Setup
+</div>
+
+---
+
+## The idea
+
+Most people know what they want out of a database. Far fewer remember the exact `JOIN`
+syntax to get it.
+
+Query Assistant sits in that gap. You describe the task the way you'd describe it to a
+colleague — in English or Roman Urdu — and it shows you the SQL it wrote alongside the
+answer. Over time the SQL stops being a black box, which is the actual point: it's a tool
+for getting answers *and* a way to pick up SQL by reading queries that solve problems you
+actually had.
+
+## What it does
+
+| | |
+|---|---|
+| **Plain-English questions** | *"employees in the IT department"*, *"products low on stock"*, *"total revenue this month"* |
+| **Roman Urdu too** | *"kitne employees hain"* works as well as *"how many employees"* |
+| **Shows its work** | Every answer comes with the generated SQL, syntax-highlighted and copyable |
+| **Two engines** | Claude writes the SQL when an API key is set; a rule-based engine handles it when there isn't one — so the app never hard-fails |
+| **Your own data** | Upload a CSV, connect a SQLite file, or paste a PostgreSQL / Supabase connection string |
+| **Tables and charts** | Results render as a table, and as a bar / line / pie chart when the shape of the data suits one |
+| **CSV export** | Download any result set |
+| **Accounts and history** | Optional sign-up; every question you ask is saved so you can find that query again |
+| **Learn SQL page** | A built-in guide from `SELECT` to multi-table joins, where every example runs live against the demo database |
+| **Light and dark** | Follows your preference, remembered across visits |
+
+## Quick start
 
 ```bash
+git clone https://github.com/abdulhaseebofficial/query-assistant.git
+cd query-assistant
+
+python -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+
 pip install -r requirements.txt
-cp .env.example .env   # then fill in SECRET_KEY (and ANTHROPIC_API_KEY if you want AI-generated SQL)
+cp .env.example .env               # Windows: copy .env.example .env
+
 python run.py
 ```
 
-The app starts at **http://127.0.0.1:5000** and seeds `data/company.db` automatically on first run.
+Open <http://127.0.0.1:5000>. The demo database seeds itself on first run — there is no
+migration step and no external service to install.
 
-## Environment Variables
+**No API key needed.** Without `ANTHROPIC_API_KEY` the app runs on its rule-based engine
+and every feature still works. Add a key when you want the AI engine to handle questions
+the rules don't cover.
 
-| Variable | Required | Purpose |
+## How a question becomes an answer
+
+```mermaid
+flowchart LR
+    Q["Your question<br/><i>highest paid employees</i>"] --> R{"Which data<br/>source is active?"}
+
+    R -->|Demo database| A["AI engine<br/>Claude"]
+    R -->|Uploaded CSV| A
+    R -->|Connected DB| A
+
+    A --> V{"Validator<br/><i>one read-only SELECT?<br/>whitelisted tables only?</i>"}
+    V -->|passes| X["Run the query"]
+    V -->|rejected, or no API key| F["Rule-based engine"]
+    F --> X
+
+    X --> O["Table + chart + the SQL"]
+```
+
+The validator is the part worth knowing about. The AI engine executes SQL that a language
+model wrote, so before anything runs it has to be a single read-only `SELECT` against an
+explicitly whitelisted set of tables. That whitelist matters because the demo data and the
+app's own `users` table live in the same SQLite file — without it, a cleverly worded
+question could talk the model into `SELECT * FROM users`. See
+[`tests/test_sql_guardrails.py`](tests/test_sql_guardrails.py) for the specific attacks
+that are covered.
+
+If the AI engine is unavailable, returns something invalid, or produces SQL that fails to
+run, the rule-based engine picks it up. There is no state in which a missing API key
+breaks the app.
+
+## Screenshots
+
+<table>
+<tr>
+<td width="50%"><img src="docs/screenshots/home.png" alt="The home page with example questions"><br><b>Ask anything</b><br>Example questions to start from, and the schema is one click away.</td>
+<td width="50%"><img src="docs/screenshots/learn.png" alt="The Learn SQL guide"><br><b>Learn SQL</b><br>Every example is a real query you can run against the demo data.</td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/upload.png" alt="The CSV upload page"><br><b>Bring your own CSV</b><br>Headers become columns, types are inferred automatically.</td>
+<td><img src="docs/screenshots/connect-db.png" alt="The connect-a-database page"><br><b>Connect a database</b><br>A SQLite file, or a PostgreSQL / Supabase connection string.</td>
+</tr>
+</table>
+
+<details>
+<summary><b>Light theme</b></summary>
+<br>
+<img src="docs/screenshots/query-result-light.png" alt="The same results page in light theme" width="100%">
+</details>
+
+## Data sources
+
+The app queries one source at a time, and you switch between them from the nav.
+
+| Source | How you connect it | What becomes searchable |
 |---|---|---|
-| `SECRET_KEY` | Yes (for production) | Flask session signing key. If unset, a random key is generated at startup — sessions won't survive a restart until this is set. |
-| `ANTHROPIC_API_KEY` | No | Enables Claude-based SQL generation; the app falls back to the rule-based engine when unset. |
-| `FLASK_DEBUG` | No (default `false`) | Enables Flask's debugger and auto-reload. Never set to `true` in production — the debugger allows arbitrary code execution if exposed. |
-| `SESSION_COOKIE_SECURE` | No (default `false`) | Set to `true` once the app is served over HTTPS, so the session cookie is marked `Secure`. |
+| **Demo database** | Nothing to do — it seeds on first run | 5 tables: departments, employees, products, customers, orders |
+| **CSV upload** | `/upload` — any `.csv` up to 5 MB / 5,000 rows | Column headers are sanitised into SQL-safe names; numeric types are detected |
+| **SQLite file** | `/connect-db` — upload a `.db` / `.sqlite` / `.sqlite3` | Every table in the file |
+| **PostgreSQL / Supabase** | `/connect-db` — paste a connection string | Every table in the `public` schema |
 
-## How a Query Is Answered
+Connection strings are stored on your own machine, in `data/uploads/`, and are never sent
+anywhere else. That folder is git-ignored — but see [SECURITY.md](SECURITY.md) for why you
+should still point it at a read-only database user.
 
-1. **AI engine** (`backend/engines/ai_engine.py`) is tried first if `ANTHROPIC_API_KEY` is set — it asks Claude for a SQL statement, then validates it before running: single statement, read-only `SELECT` only, no forbidden keywords (`INSERT`/`DROP`/`ATTACH`/`PRAGMA`/...), and every referenced table must be on an explicit allow-list scoped to the caller (e.g. only the 5 business tables for the built-in schema — never the app's own `users` or `query_history` tables, even though they live in the same database file).
-2. If that's unavailable or fails, the matching **rule-based engine** takes over:
-   - `rule_engine.py` for the built-in company schema
-   - `csv_engine.py` for an uploaded CSV
-   - `sqlite_connector.py` / `postgres_connector.py` for an externally connected database
-3. Results are rendered as a table, with an optional chart (`chart_utils.py`) and a CSV export option.
+## Project structure
 
-All SQL execution uses parameterized queries for values; AI-generated SQL is additionally validated as described above.
+Every folder has its own `README.md` written in plain English explaining what is in it and
+why. Click through to whichever one you're curious about.
+
+```
+query-assistant/
+├── backend/                  # Flask application — backend/README.md
+│   ├── app.py                   # Routes, request handling, view logic
+│   ├── config.py                # Central path configuration
+│   ├── database.py              # Demo schema + seed data
+│   ├── auth.py                  # Accounts, login, query history
+│   ├── engines/                 # Question → SQL — engines/README.md
+│   │   ├── ai_engine.py            # Claude-powered generation + the SQL validator
+│   │   ├── rule_engine.py          # Rule-based fallback for the demo schema
+│   │   └── csv_engine.py           # Query builder for uploaded CSVs
+│   ├── connectors/              # External data sources — connectors/README.md
+│   │   ├── sqlite_connector.py     # Uploaded .db / .sqlite files
+│   │   └── postgres_connector.py   # PostgreSQL / Supabase over a DSN
+│   ├── content/                 # Static content for the Learn SQL page
+│   └── utils/                   # chart_utils.py — results into chart data
+│
+├── frontend/                 # Everything the browser sees — frontend/README.md
+│   ├── templates/               # Jinja2 templates (+ partials/)
+│   └── static/css/              # Stylesheets
+│
+├── tests/                    # 82 tests, ~2s, no network — tests/README.md
+├── data/                     # Runtime data, git-ignored — data/README.md
+├── docs/screenshots/         # Images used by this README
+├── run.py                    # Entry point
+└── .github/workflows/ci.yml  # Tests, lint, and a real-HTTP smoke check
+```
+
+## Configuration
+
+Everything is optional except `SECRET_KEY` in production. Copy `.env.example` to `.env`
+and fill in what you need.
+
+| Variable | Default | What it does |
+|---|---|---|
+| `SECRET_KEY` | random per process | Signs session cookies. Leave it unset locally and logins simply won't survive a restart; **set it in production**. |
+| `ANTHROPIC_API_KEY` | unset | Enables Claude-powered SQL generation. Without it, the rule-based engine handles everything. |
+| `FLASK_DEBUG` | `false` | Auto-reload and interactive tracebacks. **Never `true` in production** — Flask's debugger allows arbitrary code execution if it is reachable. |
+| `SESSION_COOKIE_SECURE` | `false` | Set to `true` once you are serving over HTTPS, so cookies are marked `Secure`. Defaults off so local `http://` development works. |
+
+## Tests
+
+```bash
+pip install -r requirements.txt -r requirements-dev.txt
+
+pytest              # 82 tests, about two seconds
+ruff check .        # lint
+```
+
+No network access and no API key required — the suite runs against a throwaway SQLite file
+in a temp directory, so it never touches your real `data/company.db`. CI runs the same two
+commands on Python 3.10 through 3.13, plus a third job that boots the app and makes an
+actual HTTP request to it.
+
+What's covered: the rule engine's question-to-SQL mapping and its use of bound parameters,
+the SQL validator against a battery of injection and privilege-escalation attempts, CSV
+header sanitisation and type inference, chart-worthiness decisions, and every route
+including the security headers and the auth boundary on `/history`.
+[`tests/README.md`](tests/README.md) walks through each file.
 
 ## Security
 
-- **Passwords** — hashed with Werkzeug's `generate_password_hash` (PBKDF2), never stored or logged in plain text.
-- **Login timing** — `verify_password` runs a dummy hash comparison even when the username doesn't exist, so response time can't be used to enumerate valid usernames.
-- **CSRF** — every state-changing form is protected by Flask-WTF's `CSRFProtect`; a request without a valid token is rejected.
-- **Rate limiting** — `/login` and `/register` are throttled (Flask-Limiter) to slow down credential-stuffing and account-enumeration attempts.
-- **Session cookies** — `HttpOnly` and `SameSite=Lax` always; `Secure` when `SESSION_COOKIE_SECURE=true`.
-- **Security headers** — `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, and a `Content-Security-Policy` are set on every response.
-- **File uploads** — capped at 5 MB; CSVs are capped at 5,000 rows; SQLite uploads are verified by magic-byte header before being accepted.
+Full detail — including known limitations worth reading before deploying this anywhere
+public — is in [SECURITY.md](SECURITY.md). The short version:
 
-### Known limitations (accepted trade-offs, not oversights)
+- User input is **never** concatenated into SQL. Engines return `(sql, params)` and values
+  are bound. There are tests asserting this.
+- Model-generated SQL is validated before execution: one read-only `SELECT`, no stacked
+  statements, whitelisted tables only.
+- CSRF protection on every state-changing request; rate limits on `/login` and `/register`;
+  password hashing via `werkzeug.security`; login verification that runs against a dummy
+  hash for unknown users, so response timing doesn't leak which usernames exist.
+- `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, and a CSP on every response.
+- The Flask debugger is off unless you explicitly opt in.
 
-- **PostgreSQL connection strings are stored in plain text** at `data/uploads/postgres_connection.json` so the app can reconnect across requests. This is a single-user/local-tool design choice — don't point it at a production database with a shared secret you can't rotate. Encrypting this file (e.g. via `cryptography`'s Fernet, keyed off `SECRET_KEY`) would be the next step for a multi-tenant deployment.
-- **No CAPTCHA / device fingerprinting** on registration — the rate limiter is in-memory and per-process, which is enough to deter casual abuse but not a determined, distributed attacker.
-- **Content-Security-Policy allows `'unsafe-inline'`** for scripts/styles because the chart renderer and theme toggle currently use inline `<script>` blocks. Moving those into `frontend/static/js/` files and switching to a nonce-based CSP would let this be tightened further.
+Found something? Please report it privately — see [SECURITY.md](SECURITY.md).
+
+## Roadmap
+
+Ideas worth building, roughly in order of usefulness. PRs welcome on any of them.
+
+- [ ] Tighten the CSP to nonces instead of `'unsafe-inline'`
+- [ ] Redis-backed rate limiting so limits hold across multiple workers
+- [ ] Per-user datasets instead of one shared active source
+- [ ] MySQL connector alongside SQLite and PostgreSQL
+- [ ] Save a query from your history as a named, re-runnable report
+- [ ] Multi-turn follow-ups — *"now just the ones in Karachi"*
+
+## Contributing
+
+Contributions are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) covers setup, the two
+commands to run before opening a PR, and the couple of conventions worth knowing (mainly:
+never f-string user input into SQL).
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+[MIT](LICENSE) — do what you like with it.
+
+---
+
+<div align="center">
+<sub>Built by <a href="https://github.com/abdulhaseebofficial">Abdul Haseeb</a></sub>
+</div>
