@@ -1,6 +1,6 @@
 # tests/
 
-The automated checks that run on every push and pull request. 556 tests, about eighteen seconds,
+The automated checks that run on every push and pull request. About eighteen seconds,
 no network access and no API key required.
 
 ```bash

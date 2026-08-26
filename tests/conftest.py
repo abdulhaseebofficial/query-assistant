@@ -24,6 +24,35 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 AI_ENV_VARS = ("GEMINI_API_KEY", "GOOGLE_API_KEY", "ANTHROPIC_API_KEY", "AI_PROVIDER")
 
+# How many tests this run collected, and whether it was the whole suite. The README
+# badge quotes a number, and a number written in prose drifts every time the suite
+# grows — so one test checks it, and that test has to know what the real count is.
+COLLECTION = {}
+
+
+def pytest_collection_modifyitems(session, config, items):
+    COLLECTION["count"] = len(items)
+    # `pytest tests/test_x.py` or `-k something` collects a subset, and only a run
+    # of everything can speak for the total. A bare `pytest` still arrives here with
+    # args set — pyproject's testpaths fills them in — so compare against those
+    # rather than checking for empty.
+    testpaths = list(config.getini("testpaths") or [])
+    COLLECTION["whole_suite"] = (
+        not config.option.keyword
+        and list(config.args) in ([], testpaths)
+    )
+
+
+@pytest.fixture
+def collection_info():
+    """What this run collected.
+
+    A fixture rather than an import: pytest loads this file as the plugin module
+    `conftest`, so `from tests.conftest import COLLECTION` builds a *second* module
+    object with its own empty dict and the hook never touches it.
+    """
+    return COLLECTION
+
 
 @pytest.fixture(autouse=True)
 def no_ai_keys(monkeypatch):

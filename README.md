@@ -11,7 +11,7 @@ database, a CSV you upload, or your own SQLite / PostgreSQL database.
 [![CI](https://github.com/abdulhaseebofficial/query-assistant/actions/workflows/ci.yml/badge.svg)](https://github.com/abdulhaseebofficial/query-assistant/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/Flask-3.0-000000?logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
-[![Tests](https://img.shields.io/badge/tests-556%20passing-3fb950)](tests/)
+[![Tests](https://img.shields.io/badge/tests-563%20passing-3fb950)](tests/)
 [![Ruff](https://img.shields.io/badge/lint-ruff-261230?logo=ruff&logoColor=white)](https://docs.astral.sh/ruff/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
@@ -182,7 +182,7 @@ query-assistant/
 │   ├── templates/               # Jinja2 templates (+ partials/)
 │   └── static/css/              # Stylesheets
 │
-├── tests/                    # 556 tests, ~18s, no network — tests/README.md
+├── tests/                    # the suite, ~18s, no network — tests/README.md
 ├── data/                     # Runtime data, git-ignored — data/README.md
 ├── docs/screenshots/         # Images used by this README
 ├── run.py                    # Entry point (local)
@@ -265,7 +265,7 @@ and fill in what you need.
 ```bash
 pip install -r requirements.txt -r requirements-dev.txt
 
-pytest              # 556 tests, about eighteen seconds
+pytest              # the whole suite, about eighteen seconds
 ruff check .        # lint
 ```
 
