@@ -384,3 +384,49 @@ body {
         font-size: 1.7rem;
     }
 }
+
+/* The shared footer partial renders here too, but this page loads only learn.css,
+   which has its own --doc-* variables — so the rules in style.css matched nothing
+   and the links came out as bare browser defaults. Same shapes, this page's tokens. */
+.page-footer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 14px;
+    max-width: 940px;
+    margin: 56px auto 0;
+    padding: 22px 24px 32px;
+    border-top: 1px solid var(--doc-border);
+}
+
+.footer-action {
+    font-size: 0.84rem;
+    font-weight: 500;
+    color: var(--doc-text-soft);
+    text-decoration: none;
+    background: transparent;
+    border: 1px solid var(--doc-border);
+    border-radius: 999px;
+    padding: 7px 16px;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.footer-action:hover {
+    color: var(--doc-text);
+    border-color: var(--doc-accent);
+    background: var(--doc-accent-bg);
+}
+
+.footer-link {
+    font-size: 0.84rem;
+    color: var(--doc-text-soft);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.footer-link:hover {
+    color: var(--doc-accent-hover);
+    border-bottom-color: var(--doc-accent-bg);
+}

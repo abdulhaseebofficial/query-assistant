@@ -13,10 +13,12 @@
         <div class="docs-topbar-inner">
             <a class="docs-brand" href="/"><span class="dot"></span> Query Assistant</a>
             <div class="docs-topbar-actions">
+                <a class="docs-back" href="/sql">SQL Editor</a>
                 {% if current_user.is_authenticated %}
                 <a class="docs-back" href="/history">History</a>
                 {% else %}
                 <a class="docs-back" href="/login">Log in</a>
+                <a class="docs-back" href="/register">Sign up</a>
                 {% endif %}
                 <a class="docs-back" href="/">Back to Assistant</a>
                 <button type="button" class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark mode">
