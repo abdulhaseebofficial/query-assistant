@@ -1,6 +1,6 @@
 # tests/
 
-The automated checks that run on every push and pull request. 476 tests, about fourteen seconds,
+The automated checks that run on every push and pull request. 485 tests, about eleven seconds,
 no network access and no API key required.
 
 ```bash
@@ -55,6 +55,12 @@ routes every path to the one function, that `DATA_DIR` moves every written path 
 writable, and that importing `api/index.py` into an empty directory seeds the database and
 serves a real answer. The cold-start tests run in a subprocess because `config.py` reads
 the environment once at import.
+
+**`test_user_journeys.py`** — whole flows, in order, sharing state between the steps.
+Every other file isolates its subject with a fresh fixture, which is the right way to test a
+unit and the wrong way to notice that clearing a dataset leaves the page it fed still
+claiming to have one. These run the sequences a person performs — upload, ask, export,
+clear — and check the state after each step.
 
 **`test_connected_database.py`** — questions asked against a database someone attached
 at runtime. This path had no tests at all, and it shares its query builder with the CSV

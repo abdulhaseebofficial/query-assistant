@@ -59,6 +59,28 @@ def test_database():
     yield db_path
 
 
+@pytest.fixture(autouse=True)
+def no_uploaded_dataset(test_database):
+    """Start every test with no CSV attached.
+
+    The database is shared for the whole session, and an uploaded dataset lives in
+    it as `custom_data`/`custom_meta`. Without this, a test that uploads one leaves
+    it behind and the next test that assumes a clean slate fails — but only when the
+    two run in that order, which is the kind of failure that shows up in CI and not
+    on the machine that introduced it.
+    """
+    import sqlite3
+
+    from backend.engines.csv_engine import clear_dataset
+
+    connection = sqlite3.connect(test_database)
+    try:
+        clear_dataset(connection)
+    finally:
+        connection.close()
+    yield
+
+
 @pytest.fixture
 def client():
     """A test client with rate limiting off.
