@@ -1,7 +1,7 @@
 <div class="page-footer">
-    <a href="/feedback?from={{ request.path }}">Send feedback</a>
+    <a class="footer-action" href="/feedback?from={{ request.path }}">Send feedback</a>
     {% if feedback_admin %}
-    <a href="/feedback/all">Feedback received</a>
+    <a class="footer-action" href="/feedback/all">Feedback received</a>
     {% endif %}
-    <a href="https://github.com/abdulhaseebofficial/query-assistant">Source</a>
+    <a class="footer-link" href="https://github.com/abdulhaseebofficial/query-assistant">Source</a>
 </div>

@@ -1084,28 +1084,53 @@ body,
 }
 
 
-/* Sits under every page. Quiet: it's where you go when something is wrong, not
-   something to draw the eye while things are going fine. */
+/* Sits under every page. Quiet as a block, but the links inside still have to
+   read as links: text-faint is the colour for de-emphasised *labels*, and using it
+   here made "Send feedback" look like something already greyed out. */
 .page-footer {
     display: flex;
     justify-content: center;
+    align-items: center;
     flex-wrap: wrap;
-    gap: 20px;
+    gap: 14px;
     max-width: 900px;
     margin: 56px auto 0;
-    padding: 20px 18px 8px;
+    padding: 22px 18px 10px;
     border-top: 1px solid var(--border);
 }
 
-.page-footer a {
+/* Sending feedback is an action, so it gets the shape of one — the same outlined
+   pill the data-source links use, at a smaller size. */
+.footer-action {
     font-size: 0.84rem;
-    color: var(--text-faint);
+    font-weight: 500;
+    color: var(--text-soft);
     text-decoration: none;
-    transition: color 0.15s;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 7px 16px;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
 }
 
-.page-footer a:hover {
+.footer-action:hover {
+    color: var(--text);
+    border-color: var(--accent);
+    background: var(--accent-bg);
+}
+
+/* A reference, not an action. */
+.footer-link {
+    font-size: 0.84rem;
+    color: var(--text-soft);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.footer-link:hover {
     color: var(--accent-hover);
+    border-bottom-color: var(--accent-bg);
 }
 
 .label-optional {
