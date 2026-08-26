@@ -122,8 +122,15 @@ def sample_rows(rows, size):
 
 
 def load_csv(file_stream, conn, dataset_name="dataset"):
-    text_stream = io.TextIOWrapper(file_stream, encoding="utf-8-sig", errors="replace")
-    reader = csv.reader(text_stream)
+    # Decode the bytes ourselves rather than wrapping the stream. Werkzeug hands the
+    # upload route a SpooledTemporaryFile, and before Python 3.11 that isn't an
+    # io.IOBase and has no readable() — so io.TextIOWrapper raised AttributeError and
+    # every upload failed on 3.10 while passing everywhere else. Reading it whole
+    # costs nothing here: the request is capped at 5 MB and every row is materialised
+    # a few lines below anyway.
+    raw = file_stream.read()
+    text = raw if isinstance(raw, str) else raw.decode("utf-8-sig", errors="replace")
+    reader = csv.reader(io.StringIO(text))
 
     try:
         header = next(reader)

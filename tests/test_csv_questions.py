@@ -190,3 +190,43 @@ class TestWithoutColumnTypes:
         )
         assert not is_aggregate
         conn.execute(sql, params).fetchall()
+
+
+class TestTheStreamTheRouteActuallyGets:
+    """Werkzeug hands the upload route a SpooledTemporaryFile, not a BytesIO.
+
+    Before Python 3.11 that isn't an io.IOBase and has no readable(), so wrapping
+    it in io.TextIOWrapper raised AttributeError — every upload failed on 3.10 and
+    passed on every other version. The tests all used BytesIO and never saw it.
+    """
+
+    def _spooled(self, data):
+        import tempfile
+
+        stream = tempfile.SpooledTemporaryFile()
+        stream.write(data)
+        stream.seek(0)
+        return stream
+
+    def test_a_spooled_file_loads(self, conn):
+        info = load_csv(self._spooled(CSV), conn, "Spooled")
+
+        assert info["row_count"] == ROW_COUNT
+        assert info["name"] == "Spooled"
+
+    def test_a_bytes_stream_still_loads(self, conn):
+        assert load_csv(io.BytesIO(CSV), conn, "Bytes")["row_count"] == ROW_COUNT
+
+    def test_a_byte_order_mark_is_stripped(self, conn):
+        """Spreadsheets export UTF-8 with a BOM; it must not become part of a name."""
+        info = load_csv(self._spooled(b"\xef\xbb\xbf" + CSV), conn, "BOM")
+        assert info["columns"][0] == "city"
+
+    def test_undecodable_bytes_do_not_raise(self, conn):
+        """A mislabelled file should give a usable table, not a stack trace."""
+        info = load_csv(self._spooled(b"City,Note\nKarachi,\xff\xfe bad\n"), conn, "Bad")
+        assert info["row_count"] == 1
+
+    def test_an_empty_file_is_reported_not_crashed(self, conn):
+        with pytest.raises(ValueError, match="empty"):
+            load_csv(self._spooled(b""), conn, "Empty")
