@@ -1,6 +1,6 @@
 # tests/
 
-The automated checks that run on every push and pull request. 532 tests, about sixteen seconds,
+The automated checks that run on every push and pull request. 556 tests, about eighteen seconds,
 no network access and no API key required.
 
 ```bash
@@ -55,6 +55,12 @@ routes every path to the one function, that `DATA_DIR` moves every written path 
 writable, and that importing `api/index.py` into an empty directory seeds the database and
 serves a real answer. The cold-start tests run in a subprocess because `config.py` reads
 the environment once at import.
+
+**`test_feedback.py`** — sending feedback and reading it. Two things here are cheap to
+get wrong and expensive to have wrong: the table holds email addresses people typed in and
+shares a database with the demo tables, so it has to stay off every whitelist the SQL
+editor and AI engine work from; and `ADMIN_USERNAME` being unset has to mean *nobody* can
+read it, not everybody.
 
 **`test_sql_console.py`** — the `/sql` editor, where somebody types the query
 themselves. That makes it the one route arbitrary SQL arrives on, so most of the file is

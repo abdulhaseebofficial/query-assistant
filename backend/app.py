@@ -11,14 +11,14 @@ import re
 import secrets
 from datetime import datetime
 
-from flask import Flask, Response, redirect, render_template, request, url_for
+from flask import Flask, Response, abort, redirect, render_template, request, url_for
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_login import LoginManager, current_user, login_required, login_user, logout_user
 from flask_wtf import CSRFProtect
 from markupsafe import escape
 
-from backend import auth, db, greeting, sql_console
+from backend import auth, db, feedback, greeting, sql_console
 from backend.config import STATIC_DIR, TEMPLATE_DIR
 from backend.connectors import postgres_connector, sqlite_connector
 from backend.content.learn_content import CONCEPTS, FAQS
@@ -93,6 +93,12 @@ def set_security_headers(response):
         "frame-ancestors 'none'"
     )
     return response
+
+
+@app.context_processor
+def inject_feedback_admin():
+    """Whether to offer the "feedback received" link, which only the admin can open."""
+    return {"feedback_admin": feedback.is_admin(current_user)}
 
 
 @login_manager.user_loader
@@ -622,6 +628,47 @@ def sql_console_page():
         sql=typed,
         result=result,
     )
+
+
+FEEDBACK_LIMIT = "5 per minute"
+
+
+@app.route("/feedback", methods=["GET", "POST"])
+@limiter.limit(FEEDBACK_LIMIT, methods=["POST"])
+def feedback_page():
+    """Say what's wrong, or missing, or working.
+
+    Open to anyone: the people most able to say a thing is confusing are the ones
+    who haven't signed up. The email box is optional and only there so a reply is
+    possible — nothing is sent to it automatically.
+    """
+    sent = False
+    error = None
+
+    if request.method == "POST":
+        message = request.form.get("message", "")
+        if not message.strip():
+            error = "Please write something first."
+        else:
+            sent = feedback.save(
+                message,
+                email=request.form.get("email"),
+                user_id=current_user.id if current_user.is_authenticated else None,
+                page=request.form.get("page"),
+            )
+
+    return render_template("feedback.html", sent=sent, error=error,
+                           came_from=request.args.get("from", ""))
+
+
+@app.route("/feedback/all", methods=["GET"])
+@login_required
+def feedback_all():
+    """Read what people sent. Only the account named by ADMIN_USERNAME."""
+    if not feedback.is_admin(current_user):
+        abort(404)
+    return render_template("feedback_all.html", entries=feedback.recent(),
+                           total=feedback.count())
 
 
 @app.route("/learn", methods=["GET"])

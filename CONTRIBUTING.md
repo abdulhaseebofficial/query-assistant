@@ -24,7 +24,7 @@ key, and the test suite clears those variables anyway so it can't make a live ca
 ## Before you open a pull request
 
 ```bash
-pytest          # 532 tests, ~16 seconds, no network needed
+pytest          # 556 tests, ~18 seconds, no network needed
 ruff check .    # lint
 ```
 

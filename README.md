@@ -11,7 +11,7 @@ database, a CSV you upload, or your own SQLite / PostgreSQL database.
 [![CI](https://github.com/abdulhaseebofficial/query-assistant/actions/workflows/ci.yml/badge.svg)](https://github.com/abdulhaseebofficial/query-assistant/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/Flask-3.0-000000?logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
-[![Tests](https://img.shields.io/badge/tests-532%20passing-3fb950)](tests/)
+[![Tests](https://img.shields.io/badge/tests-556%20passing-3fb950)](tests/)
 [![Ruff](https://img.shields.io/badge/lint-ruff-261230?logo=ruff&logoColor=white)](https://docs.astral.sh/ruff/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
@@ -49,6 +49,7 @@ actually had.
 | **Accounts and history** | Optional sign-up; every question you ask is saved so you can find that query again |
 | **Learn SQL page** | A built-in guide from `SELECT` to multi-table joins, where every example runs live against the demo database |
 | **Light and dark** | Follows your preference, remembered across visits |
+| **Feedback** | A box on every page for what's wrong, missing, or should have been understood. Stored, not emailed — nothing to configure and nothing to fail silently. `ADMIN_USERNAME` names the account that can read it |
 | **A page that gets out of the way** | The heading is a greeting that follows the reader's clock; everything else on screen is something to use, not something explaining what to use |
 
 ## Quick start
@@ -167,6 +168,7 @@ query-assistant/
 │   ├── auth.py                  # Accounts, login, query history
 │   ├── greeting.py              # The time-of-day heading
 │   ├── sql_console.py           # Running SQL somebody typed themselves
+│   ├── feedback.py              # What people send, and who may read it
 │   ├── engines/                 # Question → SQL — engines/README.md
 │   │   ├── ai_engine.py            # Gemini / Claude generation + the SQL validator
 │   │   ├── rule_engine.py          # Rule-based answers for the demo schema
@@ -182,7 +184,7 @@ query-assistant/
 │   ├── templates/               # Jinja2 templates (+ partials/)
 │   └── static/css/              # Stylesheets
 │
-├── tests/                    # 532 tests, ~16s, no network — tests/README.md
+├── tests/                    # 556 tests, ~18s, no network — tests/README.md
 ├── data/                     # Runtime data, git-ignored — data/README.md
 ├── docs/screenshots/         # Images used by this README
 ├── run.py                    # Entry point (local)
@@ -256,6 +258,7 @@ and fill in what you need.
 | `FLASK_DEBUG` | `false` | Auto-reload and interactive tracebacks. **Never `true` in production** — Flask's debugger allows arbitrary code execution if it is reachable. |
 | `DATABASE_URL` | unset | PostgreSQL connection string for the app's own data. Unset means a SQLite file under `DATA_DIR`. Required on any host without a persistent disk — see [Deployment](#deployment). |
 | `DATA_DIR` | `./data` | Where the SQLite file and uploaded files are written. Only needed where the deployment directory is read-only. |
+| `ADMIN_USERNAME` | unset | The account allowed to read submitted feedback at `/feedback/all`. Unset means nobody. |
 | `SESSION_COOKIE_SECURE` | `false` | Set to `true` once you are serving over HTTPS, so cookies are marked `Secure` and HSTS is sent. Defaults off so local `http://` development works. |
 | `ALLOW_PRIVATE_DB_HOSTS` | `false` | Allows PostgreSQL connections to localhost / private networks. Needed to connect a database on your own machine; leave off for anything internet-facing (see [SECURITY.md](SECURITY.md)). |
 
@@ -264,7 +267,7 @@ and fill in what you need.
 ```bash
 pip install -r requirements.txt -r requirements-dev.txt
 
-pytest              # 532 tests, about sixteen seconds
+pytest              # 556 tests, about eighteen seconds
 ruff check .        # lint
 ```
 

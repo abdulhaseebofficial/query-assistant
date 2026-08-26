@@ -162,6 +162,15 @@ SCHEMA = f"""
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
 
+        CREATE TABLE IF NOT EXISTS feedback (
+            {db.IDENTITY_PK},
+            user_id INTEGER,
+            email TEXT,
+            message TEXT NOT NULL,
+            page TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+
         CREATE TABLE IF NOT EXISTS query_history (
             {db.IDENTITY_PK},
             user_id INTEGER NOT NULL REFERENCES users(id),

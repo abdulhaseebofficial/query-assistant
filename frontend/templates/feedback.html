@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feedback — Query Assistant</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    {% include 'partials/_nav.html' %}
+    <div class="frame">
+        <div class="container container-narrow">
+
+            {% if sent %}
+                <header>
+                    <h1>Thanks</h1>
+                    <p class="subtitle">That's been recorded.</p>
+                </header>
+                <div class="upload-notes" style="text-align:center;">
+                    <a class="nav-link" href="/">Back to asking questions</a>
+                </div>
+            {% else %}
+                <header>
+                    <h1>Feedback</h1>
+                    <p class="subtitle">
+                        Something wrong, missing, or confusing? A question it should have
+                        understood and didn't?
+                    </p>
+                </header>
+
+                {% if error %}
+                <div class="no-results" style="margin-bottom: 24px;">
+                    <p class="no-results-title">Nothing to send</p>
+                    <p>{{ error }}</p>
+                </div>
+                {% endif %}
+
+                <form action="/feedback" method="POST" class="upload-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="page" value="{{ came_from }}">
+
+                    <label class="upload-field">
+                        <span class="upload-label">What happened?</span>
+                        <textarea
+                            name="message"
+                            rows="6"
+                            maxlength="4000"
+                            required
+                            placeholder="I asked &quot;employees hired last year&quot; and it said it couldn't understand."
+                        ></textarea>
+                    </label>
+
+                    <label class="upload-field">
+                        <span class="upload-label">
+                            Email <span class="label-optional">— optional, only if you want a reply</span>
+                        </span>
+                        <input type="email" name="email" maxlength="254" placeholder="you@example.com">
+                    </label>
+
+                    <button type="submit">Send</button>
+                </form>
+
+                <div class="upload-notes">
+                    <p>Nothing is emailed anywhere — it's stored for the maintainer to read.</p>
+                </div>
+            {% endif %}
+
+        </div>
+        {% include 'partials/_footer.html' %}
+    </div>
+</body>
+</html>
