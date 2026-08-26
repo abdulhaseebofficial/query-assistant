@@ -113,6 +113,23 @@ h1 + .subtitle {
 
 
 
+/* For a link that sits inside a sentence. .nav-link is a pill — background,
+   padding, and a top margin that drags it off the baseline — so forcing it inline
+   with a style attribute put a button in the middle of running text. */
+.inline-link {
+    color: var(--accent);
+    font-weight: 600;
+    text-decoration: none;
+    border-bottom: 1px solid var(--accent-bg);
+    padding-bottom: 1px;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.inline-link:hover {
+    color: var(--accent-hover);
+    border-bottom-color: var(--accent);
+}
+
 .nav-link {
     display: inline-flex;
     align-items: center;
