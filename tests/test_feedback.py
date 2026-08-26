@@ -196,18 +196,34 @@ class TestRateLimit:
 
 
 class TestContactLink:
-    """A way to reach the maintainer directly, for anything the box doesn't suit."""
+    """Ways to reach the maintainer directly, for anything the box doesn't suit.
+
+    Both, because they reach different people: email needs no account and suits
+    someone reporting a bug, LinkedIn suits someone who wants to know who built it.
+    """
 
     LINKEDIN = "https://www.linkedin.com/in/abdulhaseebkashmiri/"
+    EMAIL = "abdul.haseeb.kashmiri@outlook.com"
 
-    def test_the_form_offers_it(self, client):
-        assert self.LINKEDIN in client.get("/feedback").get_data(as_text=True)
+    def test_the_form_offers_both(self, client):
+        body = client.get("/feedback").get_data(as_text=True)
 
-    def test_the_thanks_page_offers_it_too(self, client):
+        assert self.LINKEDIN in body
+        assert self.EMAIL in body
+
+    def test_the_thanks_page_offers_both_too(self, client):
         body = send(client, "Something to say").get_data(as_text=True)
 
         assert "Thanks" in body
         assert self.LINKEDIN in body
+        assert self.EMAIL in body
+
+    def test_the_email_opens_a_mail_client_with_a_subject(self, client):
+        """Without a subject line every message arrives titled nothing."""
+        body = client.get("/feedback").get_data(as_text=True)
+
+        assert f"mailto:{self.EMAIL}" in body
+        assert "subject=" in body
 
     def test_it_opens_safely_in_a_new_tab(self, client):
         """target=_blank without rel=noopener hands the opened page a handle back
