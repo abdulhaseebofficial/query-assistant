@@ -75,7 +75,3 @@ ALL_PHRASES = tuple(
     )
 )
 
-
-def all_phrases():
-    """Kept as a function for callers that read better calling one."""
-    return ALL_PHRASES

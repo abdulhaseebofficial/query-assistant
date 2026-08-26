@@ -14,7 +14,8 @@ What differs is only the reporting. A model gets None and falls back; a person g
 told which rule they ran into, because they're the one who can fix it.
 """
 
-from backend.connectors import postgres_connector, sqlite_connector
+from backend import connectors
+from backend.db import quote_ident
 from backend.engines.ai_engine import BUILTIN_TABLES, check_select
 from backend.engines.csv_engine import get_dataset_info
 
@@ -26,8 +27,7 @@ CONNECTED = "connected"
 def available_sources(conn):
     """The sources that can be queried right now, most specific first.
 
-    Each is a dict of: key, label, tables (name -> columns), and the placeholder
-    style its driver expects.
+    Each is a dict of: key, label, and tables (name -> columns).
     """
     sources = []
 
@@ -37,10 +37,9 @@ def available_sources(conn):
             "key": DATASET,
             "label": f"{dataset['name']} (uploaded)",
             "tables": {"custom_data": list(dataset["columns"])},
-            "placeholder": "?",
         })
 
-    external, placeholder, kind = _external()
+    external, _placeholder, kind = connectors.active_source()
     if external is not None:
         tables = {t["name"]: list(t["columns"]) for t in external.list_tables()}
         if tables:
@@ -48,35 +47,28 @@ def available_sources(conn):
                 "key": CONNECTED,
                 "label": f"Connected {kind}",
                 "tables": tables,
-                "placeholder": placeholder,
             })
 
     sources.append({
         "key": DEMO,
         "label": "Demo company database",
-        "tables": _demo_tables(),
-        "placeholder": "?",
+        "tables": _demo_tables(conn),
     })
     return sources
 
 
-def _external():
-    if postgres_connector.is_connected():
-        return postgres_connector, "%s", "PostgreSQL"
-    if sqlite_connector.is_connected():
-        return sqlite_connector, "?", "SQLite"
-    return None, None, None
+def _demo_tables(conn):
+    """The demo tables and their columns, read from the database.
 
-
-def _demo_tables():
-    return {
-        "departments": ["id", "name", "location", "manager_name"],
-        "employees": ["id", "name", "department_id", "position", "salary", "email", "hire_date"],
-        "products": ["id", "name", "category", "price", "stock_quantity"],
-        "customers": ["id", "name", "email", "city", "phone"],
-        "orders": ["id", "customer_id", "product_id", "quantity", "order_date",
-                   "total_amount", "status"],
-    }
+    Listing them by hand here would have been a fourth copy of a schema that
+    already exists as DDL — and the copy shown to somebody writing a query is the
+    worst one to let drift. LIMIT 0 costs nothing and works on both dialects.
+    """
+    tables = {}
+    for name in sorted(BUILTIN_TABLES):
+        cursor = conn.execute(f"SELECT * FROM {quote_ident(name)} LIMIT 0")
+        tables[name] = [column[0] for column in cursor.description]
+    return tables
 
 
 def pick_source(sources, key):
@@ -111,7 +103,7 @@ def run(source, sql, demo_conn):
 
 def _execute(source, statement, demo_conn):
     if source["key"] == CONNECTED:
-        external, _placeholder, _kind = _external()
+        external, _placeholder, _kind = connectors.active_source()
         connection = external.get_connection()
         try:
             cursor = connection.cursor()

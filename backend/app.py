@@ -18,7 +18,7 @@ from flask_login import LoginManager, current_user, login_required, login_user, 
 from flask_wtf import CSRFProtect
 from markupsafe import escape
 
-from backend import auth, db, feedback, greeting, sql_console
+from backend import auth, connectors, db, feedback, greeting, sql_console
 from backend.config import STATIC_DIR, TEMPLATE_DIR
 from backend.connectors import postgres_connector, sqlite_connector
 from backend.content.learn_content import CONCEPTS, FAQS
@@ -389,13 +389,8 @@ def run_custom_query(user_input, meta):
 
 
 def get_active_source():
-    """Returns (backend_module, sql_placeholder, kind_label) for whichever external
-    database is currently connected, or (None, None, None) if neither is."""
-    if postgres_connector.is_connected():
-        return postgres_connector, "%s", "PostgreSQL"
-    if sqlite_connector.is_connected():
-        return sqlite_connector, "?", "SQLite"
-    return None, None, None
+    """(connector, placeholder, label) for whichever external database is attached."""
+    return connectors.active_source()
 
 
 def fetch_rows(conn, sql, params):
