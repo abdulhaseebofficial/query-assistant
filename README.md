@@ -123,20 +123,18 @@ because the department filter fell through without a word.
 
 <table>
 <tr>
-<td width="50%"><img src="docs/screenshots/home.png" alt="The home page: a search box and example questions"><br><b>Ask anything</b><br>Example questions to start from; the schema is one click away.</td>
-<td width="50%"><img src="docs/screenshots/learn.png" alt="The Learn SQL guide"><br><b>Learn SQL</b><br>Every example is a real query you can run against the demo data.</td>
+<td width="50%"><img src="docs/screenshots/home.png" alt="The home page: a greeting, a search box and example questions"><br><b>Ask anything</b><br>The heading follows the reader's clock — this one was taken at 2am.</td>
+<td width="50%"><img src="docs/screenshots/sql-editor.png" alt="The SQL editor with a query and its results"><br><b>Or write the SQL yourself</b><br>Read-only, one SELECT, against whichever source you pick.</td>
 </tr>
 <tr>
-<td><img src="docs/screenshots/sql-editor.png" alt="The SQL editor with a query and its results"><br><b>Write your own SQL</b><br>Read-only, one SELECT, against whichever source you pick.</td>
+<td><img src="docs/screenshots/learn.png" alt="The Learn SQL guide"><br><b>Learn SQL</b><br>Every example is a real query you can run against the demo data.</td>
 <td><img src="docs/screenshots/connect-db.png" alt="The connect-a-database page"><br><b>Connect a database</b><br>A SQLite file, or a PostgreSQL / Supabase connection string.</td>
 </tr>
+<tr>
+<td><img src="docs/screenshots/feedback.png" alt="The feedback page"><br><b>Say what's wrong</b><br>Stored rather than emailed, so it can't fail quietly.</td>
+<td><img src="docs/screenshots/query-result-light.png" alt="The results page in light theme"><br><b>Light theme</b><br>Follows your preference, remembered across visits.</td>
+</tr>
 </table>
-
-<details>
-<summary><b>Light theme</b></summary>
-<br>
-<img src="docs/screenshots/query-result-light.png" alt="The same results page in light theme" width="100%">
-</details>
 
 ## Data sources
 
