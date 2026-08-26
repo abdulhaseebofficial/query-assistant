@@ -1,6 +1,6 @@
 # tests/
 
-The automated checks that run on every push and pull request. 490 tests, about eleven seconds,
+The automated checks that run on every push and pull request. 532 tests, about sixteen seconds,
 no network access and no API key required.
 
 ```bash
@@ -55,6 +55,14 @@ routes every path to the one function, that `DATA_DIR` moves every written path 
 writable, and that importing `api/index.py` into an empty directory seeds the database and
 serves a real answer. The cold-start tests run in a subprocess because `config.py` reads
 the environment once at import.
+
+**`test_sql_console.py`** — the `/sql` editor, where somebody types the query
+themselves. That makes it the one route arbitrary SQL arrives on, so most of the file is
+about what must *not* run: writes, stacked statements, and the app's own `users` table,
+which lives in the same file as the demo data. The strongest of them asserts by outcome —
+send `DROP TABLE employees`, then count the employees. It also pins that the console and
+the AI engine call the same validator, since two copies of a security rule is two chances
+to weaken one.
 
 **`test_user_journeys.py`** — whole flows, in order, sharing state between the steps.
 Every other file isolates its subject with a fresh fixture, which is the right way to test a

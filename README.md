@@ -11,7 +11,7 @@ database, a CSV you upload, or your own SQLite / PostgreSQL database.
 [![CI](https://github.com/abdulhaseebofficial/query-assistant/actions/workflows/ci.yml/badge.svg)](https://github.com/abdulhaseebofficial/query-assistant/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/Flask-3.0-000000?logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
-[![Tests](https://img.shields.io/badge/tests-490%20passing-3fb950)](tests/)
+[![Tests](https://img.shields.io/badge/tests-532%20passing-3fb950)](tests/)
 [![Ruff](https://img.shields.io/badge/lint-ruff-261230?logo=ruff&logoColor=white)](https://docs.astral.sh/ruff/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
@@ -39,6 +39,7 @@ actually had.
 | **Plain-English questions** | *"employees in the IT department"*, *"products low on stock"*, *"total revenue this month"* |
 | **Roman Urdu too** | Not just the odd word — *"IT walay employees"* filters by department, *"aaj ke orders"* by date, *"total kitni sales hui"* totals rather than counts, *"sirf aik"* returns one row |
 | **Shows its work** | Every answer comes with the generated SQL, syntax-highlighted and copyable |
+| **Or write the SQL yourself** | A `/sql` editor for when you already have a query. Runs against any attached source, through the same read-only validator that guards model-written SQL, and tells you which rule you hit rather than only refusing |
 | **Bring your own model** | Google Gemini or Anthropic Claude writes the SQL — set whichever key you have, or neither, and a rule-based engine takes over so the app never hard-fails |
 | **Says when it doesn't know** | The rule-based engine answers only the phrasings it genuinely encodes. Ask it something it can't express and it says so, and says why, instead of returning a table that looks like an answer |
 | **Your own data** | Upload a CSV, connect a SQLite file, or paste a PostgreSQL / Supabase connection string |
@@ -125,7 +126,7 @@ because the department filter fell through without a word.
 <td width="50%"><img src="docs/screenshots/learn.png" alt="The Learn SQL guide"><br><b>Learn SQL</b><br>Every example is a real query you can run against the demo data.</td>
 </tr>
 <tr>
-<td><img src="docs/screenshots/upload.png" alt="The CSV upload page"><br><b>Bring your own CSV</b><br>Headers become columns, types are inferred automatically.</td>
+<td><img src="docs/screenshots/sql-editor.png" alt="The SQL editor with a query and its results"><br><b>Write your own SQL</b><br>Read-only, one SELECT, against whichever source you pick.</td>
 <td><img src="docs/screenshots/connect-db.png" alt="The connect-a-database page"><br><b>Connect a database</b><br>A SQLite file, or a PostgreSQL / Supabase connection string.</td>
 </tr>
 </table>
@@ -165,6 +166,7 @@ query-assistant/
 │   ├── database.py              # Schema + demo seed data
 │   ├── auth.py                  # Accounts, login, query history
 │   ├── greeting.py              # The time-of-day heading
+│   ├── sql_console.py           # Running SQL somebody typed themselves
 │   ├── engines/                 # Question → SQL — engines/README.md
 │   │   ├── ai_engine.py            # Gemini / Claude generation + the SQL validator
 │   │   ├── rule_engine.py          # Rule-based answers for the demo schema
@@ -180,7 +182,7 @@ query-assistant/
 │   ├── templates/               # Jinja2 templates (+ partials/)
 │   └── static/css/              # Stylesheets
 │
-├── tests/                    # 490 tests, ~11s, no network — tests/README.md
+├── tests/                    # 532 tests, ~16s, no network — tests/README.md
 ├── data/                     # Runtime data, git-ignored — data/README.md
 ├── docs/screenshots/         # Images used by this README
 ├── run.py                    # Entry point (local)
@@ -262,7 +264,7 @@ and fill in what you need.
 ```bash
 pip install -r requirements.txt -r requirements-dev.txt
 
-pytest              # 490 tests, about eleven seconds
+pytest              # 532 tests, about sixteen seconds
 ruff check .        # lint
 ```
 

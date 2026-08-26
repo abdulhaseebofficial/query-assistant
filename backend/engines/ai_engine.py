@@ -184,23 +184,49 @@ def _referenced_tables(sql):
     return {name.lower() for name in _TABLE_REF_PATTERN.findall(sql)}
 
 
-def _validate_select(sql, allowed_tables):
-    if not sql:
-        return None
+def check_select(sql, allowed_tables):
+    """Validate `sql`, returning (statement, None) or (None, reason).
+
+    The rules live here alone. A model's SQL and a person's typed SQL are checked
+    by exactly the same code — two copies of a security rule is two chances to
+    weaken one of them. The difference is only that a person gets told *why*: the
+    model has no use for the reason, but someone who just typed the query does.
+    """
+    if not sql or not sql.strip():
+        return None, "There's no query here."
+
     cleaned = sql.strip().rstrip(";").strip()
-    if not cleaned or ";" in cleaned:
-        return None
+    if not cleaned:
+        return None, "There's no query here."
+
+    if ";" in cleaned:
+        return None, "Only one statement at a time — remove the semicolon in the middle."
+
     if not re.match(r"^\s*SELECT\b", cleaned, re.IGNORECASE):
-        return None
-    if FORBIDDEN_KEYWORDS.search(cleaned):
-        return None
+        return None, "Only SELECT queries can run here. This one starts with something else."
+
+    forbidden = FORBIDDEN_KEYWORDS.search(cleaned)
+    if forbidden:
+        word = forbidden.group(0).upper()
+        return None, f"{word} would change the data. Only read-only queries can run here."
 
     allowed = {t.lower() for t in allowed_tables}
     referenced = _referenced_tables(cleaned)
-    if not referenced or not referenced.issubset(allowed):
-        return None
+    if not referenced:
+        return None, "No table found in the query — a SELECT here has to read from one."
 
-    return cleaned + ";"
+    unknown = sorted(referenced - allowed)
+    if unknown:
+        listed = ", ".join(sorted(allowed))
+        return None, f"No table called '{unknown[0]}' here. Available: {listed}."
+
+    return cleaned + ";", None
+
+
+def _validate_select(sql, allowed_tables):
+    """The statement, or None. Used where the reason isn't needed."""
+    statement, _reason = check_select(sql, allowed_tables)
+    return statement
 
 
 def _build_instructions(schema_description, dialect, table_name):

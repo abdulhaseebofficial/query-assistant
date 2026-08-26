@@ -977,3 +977,83 @@ body,
     background: var(--accent-bg);
 }
 
+
+
+/* The SQL editor: a place to type a query rather than a question. */
+.sql-editor {
+    margin-bottom: 18px;
+}
+
+.sql-editor-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    font-size: 0.86rem;
+    color: var(--text-soft);
+}
+
+.sql-editor-bar select {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.86rem;
+    color: var(--text);
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 7px 12px;
+    cursor: pointer;
+}
+
+.sql-input {
+    width: 100%;
+    padding: 18px 20px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: var(--text);
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    outline: none;
+    resize: vertical;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.sql-input::placeholder {
+    color: var(--text-faint);
+}
+
+.sql-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px var(--accent-bg);
+}
+
+.sql-editor-actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: 12px;
+}
+
+.sql-editor-actions button {
+    padding: 11px 28px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #fff;
+    background: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 14px;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.15s;
+}
+
+.sql-editor-actions button:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+}
+
+.sql-editor-note {
+    font-size: 0.84rem;
+    color: var(--text-faint);
+}

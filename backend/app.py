@@ -18,7 +18,7 @@ from flask_login import LoginManager, current_user, login_required, login_user, 
 from flask_wtf import CSRFProtect
 from markupsafe import escape
 
-from backend import auth, db, greeting
+from backend import auth, db, greeting, sql_console
 from backend.config import STATIC_DIR, TEMPLATE_DIR
 from backend.connectors import postgres_connector, sqlite_connector
 from backend.content.learn_content import CONCEPTS, FAQS
@@ -584,6 +584,43 @@ def dataset_export():
         build_csv(outcome["columns"], outcome["rows"]),
         mimetype="text/csv",
         headers={"Content-Disposition": "attachment; filename=dataset_results.csv"},
+    )
+
+
+@app.route("/sql", methods=["GET", "POST"])
+@limiter.limit(QUERY_LIMIT)
+def sql_console_page():
+    """Write and run your own SQL, against whichever source you pick.
+
+    The form POSTs, because a query is a body of text and a long one doesn't survive
+    a URL. `?sql=` also runs, so a query can be linked to or bookmarked — running a
+    SELECT changes nothing, which is exactly what GET is for.
+
+    The same validator that guards model-written SQL guards this.
+    """
+    conn = get_connection()
+    try:
+        sources = sql_console.available_sources(conn)
+        chosen_key = request.form.get("source") or request.args.get("source", "")
+        source = sql_console.pick_source(sources, chosen_key)
+
+        typed = request.form.get("sql") or request.args.get("sql", "")
+        result = sql_console.run(source, typed, conn) if typed.strip() else None
+    finally:
+        conn.close()
+
+    if result and result.get("rows"):
+        result["chart"] = chart_utils.build_chart_data(result["columns"], result["rows"])
+
+    if result and current_user.is_authenticated and not result.get("error"):
+        auth.record_query(current_user.id, "/sql", typed, result["sql"], "manual")
+
+    return render_template(
+        "sql.html",
+        sources=sources,
+        source=source,
+        sql=typed,
+        result=result,
     )
 
 
