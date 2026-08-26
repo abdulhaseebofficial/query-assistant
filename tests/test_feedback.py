@@ -193,3 +193,27 @@ class TestRateLimit:
         """A public write endpoint with a text box needs a ceiling."""
         codes = [send(rate_limited_client, f"spam {i}").status_code for i in range(12)]
         assert 429 in codes
+
+
+class TestContactLink:
+    """A way to reach the maintainer directly, for anything the box doesn't suit."""
+
+    LINKEDIN = "https://www.linkedin.com/in/abdulhaseebkashmiri/"
+
+    def test_the_form_offers_it(self, client):
+        assert self.LINKEDIN in client.get("/feedback").get_data(as_text=True)
+
+    def test_the_thanks_page_offers_it_too(self, client):
+        body = send(client, "Something to say").get_data(as_text=True)
+
+        assert "Thanks" in body
+        assert self.LINKEDIN in body
+
+    def test_it_opens_safely_in_a_new_tab(self, client):
+        """target=_blank without rel=noopener hands the opened page a handle back
+        to this one."""
+        body = client.get("/feedback").get_data(as_text=True)
+        link = re.search(r'<a[^>]*linkedin\.com[^>]*>', body).group(0)
+
+        assert 'target="_blank"' in link
+        assert "noopener" in link
