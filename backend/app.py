@@ -159,16 +159,32 @@ def _attachment_header(filename):
     return f'attachment; filename="{safe}"'
 
 
-def sql_for_display(sql, params):
+def _plain(message, status=404):
+    return Response(message, status=status, mimetype="text/plain")
+
+
+def _csv_file(outcome, filename):
+    """Send an outcome as a download, or refuse it when there's nothing in it.
+
+    All three export routes ended with these same eight lines; the two that
+    weren't serving a connected table also skipped _attachment_header.
+    """
+    if outcome is None or not outcome["rows"]:
+        return _plain("No matching data to export.")
+    return Response(
+        build_csv(outcome["columns"], outcome["rows"]),
+        mimetype="text/csv",
+        headers={"Content-Disposition": _attachment_header(filename)},
+    )
+
+
+@app.template_filter("highlight")
+def sql_for_display(sql, params=()):
+    """Escape a query, put its parameter values back in, and colour the keywords."""
     display = str(escape(sql))
     for value in params:
         display = display.replace("?", f"<span class=\"sql-str\">'{escape(value)}'</span>", 1)
     return KEYWORD_PATTERN.sub(r'<span class="sql-kw">\1</span>', display)
-
-
-@app.template_filter("highlight")
-def highlight_filter(sql):
-    return KEYWORD_PATTERN.sub(r'<span class="sql-kw">\1</span>', str(escape(sql)))
 
 
 @app.route("/favicon.ico")
@@ -222,6 +238,7 @@ def _run_with_ai_fallback(execute_fn, user_input, schema_desc, table_name, diale
             "rows": rows,
             "columns": columns,
             "engine": "ai",
+            "dialect": dialect,
             "chart_hint": ai_result["chart_type"],
         }
 
@@ -238,6 +255,7 @@ def _run_with_ai_fallback(execute_fn, user_input, schema_desc, table_name, diale
         "rows": rows,
         "columns": list(rows[0].keys()) if rows else [],
         "engine": "rule",
+        "dialect": dialect,
         "chart_hint": "none",
     }
 
@@ -307,17 +325,9 @@ def index():
 def export():
     user_input = request.args.get("q", "").strip()
     outcome = run_query(user_input) if user_input else None
-
     if outcome is None:
-        return Response("Couldn't understand that question — nothing to export.", status=404, mimetype="text/plain")
-    if not outcome["rows"]:
-        return Response("No matching data to export.", status=404, mimetype="text/plain")
-
-    return Response(
-        build_csv(outcome["columns"], outcome["rows"]),
-        mimetype="text/csv",
-        headers={"Content-Disposition": "attachment; filename=query_results.csv"},
-    )
+        return _plain("Couldn't understand that question — nothing to export.")
+    return _csv_file(outcome, "query_results.csv")
 
 
 @app.route("/upload", methods=["GET", "POST"])
@@ -422,6 +432,8 @@ def run_connected_query(source, placeholder, kind, table, user_input):
     finally:
         conn.close()
 
+    # Deliberately an identity map: these are someone else's column names, so
+    # they're shown exactly as the schema spells them rather than prettified.
     outcome["label_map"] = {c: c for c in table["columns"]}
     outcome["chart"] = chart_utils.build_chart_data(
         outcome["columns"], outcome["rows"], outcome.pop("chart_hint")
@@ -518,21 +530,14 @@ def connect_db_table_export(table_name):
     source, placeholder, kind = get_active_source()
     table = source.get_table(table_name) if source else None
     if table is None:
-        return Response("Table not found.", status=404, mimetype="text/plain")
+        return _plain("Table not found.")
 
     user_input = request.args.get("q", "").strip()
     if not user_input:
-        return Response("No data to export.", status=404, mimetype="text/plain")
+        return _plain("No data to export.")
 
     outcome = run_connected_query(source, placeholder, kind, table, user_input)
-    if not outcome["rows"]:
-        return Response("No matching data to export.", status=404, mimetype="text/plain")
-
-    return Response(
-        build_csv(outcome["columns"], outcome["rows"]),
-        mimetype="text/csv",
-        headers={"Content-Disposition": _attachment_header(f"{table_name}_results.csv")},
-    )
+    return _csv_file(outcome, f"{table_name}_results.csv")
 
 
 @app.route("/dataset", methods=["GET"])
@@ -571,21 +576,13 @@ def dataset_export():
     meta = get_dataset_info(conn)
     conn.close()
     if meta is None:
-        return Response("No dataset uploaded.", status=404, mimetype="text/plain")
+        return _plain("No dataset uploaded.")
 
     user_input = request.args.get("q", "").strip()
     if not user_input:
-        return Response("No data to export.", status=404, mimetype="text/plain")
+        return _plain("No data to export.")
 
-    outcome = run_custom_query(user_input, meta)
-    if not outcome["rows"]:
-        return Response("No matching data to export.", status=404, mimetype="text/plain")
-
-    return Response(
-        build_csv(outcome["columns"], outcome["rows"]),
-        mimetype="text/csv",
-        headers={"Content-Disposition": "attachment; filename=dataset_results.csv"},
-    )
+    return _csv_file(run_custom_query(user_input, meta), "dataset_results.csv")
 
 
 @app.route("/sql", methods=["GET", "POST"])

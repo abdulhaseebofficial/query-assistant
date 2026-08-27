@@ -39,14 +39,16 @@ CONCEPTS = [
     {
         "level": "Intermediate",
         "title": "GROUP BY — summarizing per group",
-        "explanation": "GROUP BY buckets rows together (like 'per department') so an aggregate can run separately on each bucket.",
+        "explanation": "GROUP BY buckets rows together (like 'per category') so an aggregate can run separately on each bucket.",
+        # One table, no join: the point of this lesson is the bucketing. The
+        # LEFT JOIN lesson below owns the departments example — the two used to
+        # print the identical query under two different headings.
         "sql": (
-            "SELECT d.name, COUNT(e.id) AS employee_count\n"
-            "FROM departments d\n"
-            "LEFT JOIN employees e ON e.department_id = d.id\n"
-            "GROUP BY d.id;"
+            "SELECT category, COUNT(*) AS product_count\n"
+            "FROM products\n"
+            "GROUP BY category;"
         ),
-        "try_query": "list all departments",
+        "try_query": "products by category",
     },
     {
         "level": "Intermediate",

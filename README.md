@@ -180,7 +180,11 @@ query-assistant/
 │
 ├── frontend/                 # Everything the browser sees — frontend/README.md
 │   ├── templates/               # Jinja2 templates (+ partials/)
-│   └── static/css/              # Stylesheets
+│   └── static/
+│       ├── css/base.css            # Palette, buttons, nav, footer — every page
+│       ├── css/style.css           # The app pages
+│       ├── css/learn.css           # The Learn SQL page
+│       └── js/app.js               # Theme toggle + copy-to-clipboard
 │
 ├── tests/                    # the suite, ~18s, no network — tests/README.md
 ├── data/                     # Runtime data, git-ignored — data/README.md

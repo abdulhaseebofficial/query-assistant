@@ -53,44 +53,40 @@ ANTHROPIC_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-opus-5")
 
 CHART_TYPES = ("bar", "line", "pie", "none")
 
-_SQL_FIELD_DESC = "A single, complete, read-only SELECT statement that answers the question."
-_EXPLANATION_FIELD_DESC = "One plain-English sentence explaining what the query does."
-_CHART_FIELD_DESC = "The best chart type to visualize the result, or 'none' if it isn't chartable."
-
-# Anthropic's tool-use schema and Gemini's structured-output schema describe the same
-# three fields; only the wrapper shape differs between the two SDKs.
-TOOL_SCHEMA = {
-    "name": "generate_sql",
-    "description": "Return the SQL query that answers the user's question.",
-    "input_schema": {
-        "type": "object",
-        "properties": {
-            "sql": {"type": "string", "description": _SQL_FIELD_DESC},
-            "explanation": {"type": "string", "description": _EXPLANATION_FIELD_DESC},
-            "chart_type": {
-                "type": "string",
-                "enum": list(CHART_TYPES),
-                "description": _CHART_FIELD_DESC,
-            },
-        },
-        "required": ["sql", "explanation", "chart_type"],
-    },
-}
-
-GEMINI_RESPONSE_SCHEMA = {
+# Anthropic's tool-use schema and Gemini's structured-output schema describe the
+# same three fields; only the wrapper around them differs between the two SDKs, so
+# the fields are written once. Both wrappers are read-only config.
+_RESPONSE_FIELDS = {
     "type": "object",
     "properties": {
-        "sql": {"type": "string", "description": _SQL_FIELD_DESC},
-        "explanation": {"type": "string", "description": _EXPLANATION_FIELD_DESC},
+        "sql": {
+            "type": "string",
+            "description": "A single, complete, read-only SELECT statement that answers the question.",
+        },
+        "explanation": {
+            "type": "string",
+            "description": "One plain-English sentence explaining what the query does.",
+        },
         "chart_type": {
             "type": "string",
             "enum": list(CHART_TYPES),
-            "description": _CHART_FIELD_DESC,
+            "description": "The best chart type to visualize the result, or 'none' if it isn't chartable.",
         },
     },
     "required": ["sql", "explanation", "chart_type"],
+}
+
+TOOL_SCHEMA = {
+    "name": "generate_sql",
+    "description": "Return the SQL query that answers the user's question.",
+    "input_schema": _RESPONSE_FIELDS,
+}
+
+GEMINI_RESPONSE_SCHEMA = {
+    **_RESPONSE_FIELDS,
     "propertyOrdering": ["sql", "explanation", "chart_type"],
 }
+
 
 _clients = {}
 
