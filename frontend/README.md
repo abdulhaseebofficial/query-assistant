@@ -22,15 +22,31 @@ These are `.html` files written using **Jinja2** (a templating language that com
 | `history.html` | A logged-in user's past questions. |
 
 **`templates/partials/`** holds small pieces of HTML that get reused across several pages, instead of being copy-pasted into each one:
+- `_head.html` — the `<head>` contents: title, fonts, stylesheets, `app.js`. Set `page_title` (and `page_css`, if the page isn't on `style.css`) before including it.
 - `_nav.html` — the top navigation bar (logo, links, login/logout, dark-mode switch).
+- `_footer.html` — the footer that sits under every page.
+- `_error.html` — the "that didn't work" box. Set `error_title` before including it.
 - `_chart.html` — the code that draws a chart from a query's results.
 
-### `static/css/` — the styling
+### `static/` — the styling and the shared script
 
-Plain CSS files, no build step or framework needed.
+Plain CSS and JavaScript, no build step or framework needed.
 
-- `style.css` — styling for every page except the Learn SQL page.
-- `learn.css` — styling just for the Learn SQL page.
+- `css/base.css` — loaded by **every** page: the colour palette, the button system, the nav links, the theme toggle and the footer.
+- `css/style.css` — the app pages, on top of `base.css`.
+- `css/learn.css` — the Learn SQL page, on top of `base.css`.
+- `js/app.js` — the dark-mode toggle and the "Copy Query" button.
+
+**Buttons.** Every clickable pill on the site is `.btn` plus one variant, so they all share a shape:
+
+| Class | For |
+|---|---|
+| `.btn-primary` | The page's main action — Ask, Upload, Run query. |
+| `.btn-soft` | An action next to a result — Copy Query, Download CSV, Re-run. |
+| `.btn-quiet` | A link that leaves this page — Use my own CSV, Send feedback. |
+| `.btn-chip` | An example query that runs here. |
+
+Add `.btn-lg` or `.btn-sm` to change the size, `.is-active` for the selected half of a toggle. Don't write a new button rule — reach for a variant, so a button doesn't turn into a different shape on one page.
 
 ## How a page gets built
 

@@ -1,0 +1,28 @@
+{#- The page shell: <head>, the nav bar, the frame, the footer. All eleven app
+    templates wrote out their own copy of it, so anything structural — a new
+    stylesheet, a wrapper, an attribute on <html> — had to be edited eleven times.
+
+    Set these with {% set %} right after {% extends %}:
+      page_title       required, goes in the <title>
+      page_css         a stylesheet other than css/style.css
+      container_class  e.g. "container-narrow" for the auth forms
+
+    Override {% block content %} for a normal page, or {% block body %} for one
+    that doesn't want the nav and frame at all (see learn.html). -#}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% include 'partials/_head.html' %}
+</head>
+<body>
+{%- block body %}
+    {% include 'partials/_nav.html' %}
+    <div class="frame">
+        <div class="container {{ container_class|default('', true) }}">
+{% block content %}{% endblock %}
+        </div>
+        {% include 'partials/_footer.html' %}
+    </div>
+{%- endblock %}
+</body>
+</html>

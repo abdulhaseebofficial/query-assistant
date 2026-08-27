@@ -1,45 +1,30 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Feedback received — Query Assistant</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body>
-    {% include 'partials/_nav.html' %}
-    <div class="frame">
-        <div class="container">
-            <header>
-                <h1>Feedback received</h1>
-                <p class="subtitle">{{ total }} in total &middot; newest first</p>
-            </header>
+{% extends 'partials/_layout.html' %}
+{% set page_title = "Feedback received" %}
 
-            {% if entries %}
-                <div class="feedback-list">
-                    {% for entry in entries %}
-                    <article class="feedback-item">
-                        <p class="feedback-message">{{ entry.message }}</p>
-                        <p class="feedback-meta">
-                            {{ entry.created_at }}
-                            {%- if entry.username %} &middot; {{ entry.username }}{% endif %}
-                            {%- if entry.email %} &middot; {{ entry.email }}{% endif %}
-                            {%- if entry.page %} &middot; from {{ entry.page }}{% endif %}
-                        </p>
-                    </article>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <div class="no-results">
-                    <p class="no-results-title">Nothing yet</p>
-                    <p>Feedback people send will appear here.</p>
-                </div>
-            {% endif %}
+{% block content %}
+<header>
+    <h1>Feedback received</h1>
+    <p class="subtitle">{{ total }} in total &middot; newest first</p>
+</header>
 
-        </div>
-        {% include 'partials/_footer.html' %}
+{% if entries %}
+    <div class="feedback-list">
+        {% for entry in entries %}
+        <article class="feedback-item">
+            <p class="feedback-message">{{ entry.message }}</p>
+            <p class="feedback-meta">
+                {{ entry.created_at }}
+                {%- if entry.username %} &middot; {{ entry.username }}{% endif %}
+                {%- if entry.email %} &middot; {{ entry.email }}{% endif %}
+                {%- if entry.page %} &middot; from {{ entry.page }}{% endif %}
+            </p>
+        </article>
+        {% endfor %}
     </div>
-</body>
-</html>
+{% else %}
+    <div class="no-results">
+        <p class="no-results-title">Nothing yet</p>
+        <p>Feedback people send will appear here.</p>
+    </div>
+{% endif %}
+{% endblock %}

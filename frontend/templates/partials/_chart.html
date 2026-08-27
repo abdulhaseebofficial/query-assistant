@@ -1,7 +1,7 @@
 {% if result.chart %}
 <div class="view-toggle">
-    <button type="button" class="view-btn active" onclick="switchResultView('table', this)">Table</button>
-    <button type="button" class="view-btn" onclick="switchResultView('chart', this)">Chart</button>
+    <button type="button" class="btn btn-quiet is-active" onclick="switchResultView('table', this)">Table</button>
+    <button type="button" class="btn btn-quiet" onclick="switchResultView('chart', this)">Chart</button>
 </div>
 <div id="chart-view" class="chart-card" style="display:none;">
     <canvas id="result-chart"></canvas>
@@ -29,8 +29,8 @@
         window.switchResultView = function(view, btn) {
             var tableEl = document.querySelector('.table-wrap');
             var chartEl = document.getElementById('chart-view');
-            document.querySelectorAll('.view-btn').forEach(function(b) { b.classList.remove('active'); });
-            btn.classList.add('active');
+            document.querySelectorAll('.view-toggle .btn').forEach(function(b) { b.classList.remove('is-active'); });
+            btn.classList.add('is-active');
 
             if (view === 'chart') {
                 if (tableEl) tableEl.style.display = 'none';

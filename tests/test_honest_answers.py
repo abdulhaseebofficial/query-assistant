@@ -12,7 +12,12 @@ still answer, so the fix can't be over-applied into refusing everything.
 
 import pytest
 
-from backend.engines.rule_engine import interpret, unsupported_constraints
+from backend.engines.rule_engine import (
+    get_reference_data,
+    interpret,
+    reference_names,
+    unsupported_constraints,
+)
 
 # Each of these silently returned a wrong result before the gate was added.
 UNANSWERABLE = [
@@ -49,6 +54,11 @@ ANSWERABLE = [
     "average salary in sales",
     "sales team ka total salary kitna hai",
     "show me all departments",
+    # The database's own values, which look like constraints and are not. The Learn
+    # page links straight to the first of these, and it was refused as asking for
+    # "a specific number" because of the 15 in the product's name.
+    "orders for Laptop Pro 15",
+    "orders for 27-inch Monitor",
 ]
 
 
@@ -86,6 +96,41 @@ class TestStillAnswersWhatItKnows:
     def test_ranking_words_inside_a_recognised_phrase_are_not_treated_as_constraints(self, question):
         """"highest paid" is encoded; a bare "highest" is not. Only the second refuses."""
         assert unsupported_constraints(question) == []
+
+
+class TestValuesAreNotConstraints:
+    """A product named "Laptop Pro 15" contains a digit; that isn't a threshold.
+
+    The filter it produces is a plain equality the templates express happily, so
+    stripping the database's own values out of the question before looking for
+    constraints is what lets these through.
+    """
+
+    @pytest.mark.parametrize(
+        "question, value",
+        [
+            ("orders for Laptop Pro 15", "Laptop Pro 15"),
+            ("orders for 27-inch Monitor", "27-inch Monitor"),
+        ],
+    )
+    def test_a_name_containing_a_digit_still_filters_on_that_name(self, conn, question, value):
+        result = interpret(question, conn)
+        assert result is not None, "refused a question whose only digit was in a product name"
+        assert value in result["params"]
+
+    def test_a_real_constraint_beside_such_a_name_is_still_refused(self, conn):
+        """Only the name is exempt — the rest of the question is still inspected."""
+        assert interpret("orders for Laptop Pro 15 grouped by month", conn) is None
+
+    def test_the_reason_given_is_the_real_one(self, conn):
+        """Reporting "a specific number" here would blame the product's name."""
+        names = reference_names(get_reference_data(conn))
+        reasons = unsupported_constraints("orders for laptop pro 15 grouped by month", names)
+        assert reasons == ["a grouping"]
+
+    def test_a_short_name_is_not_matched_inside_another_word(self, conn):
+        """The IT department is two characters; "without" contains them both."""
+        assert interpret("customers without any orders", conn) is None
 
 
 class TestOffTopicQuestions:

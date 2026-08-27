@@ -1,0 +1,243 @@
+/* Shared foundation: the colour tokens, the button system, the theme toggle and
+   the footer. Every page loads this first, then its own stylesheet on top.
+
+   These lived in style.css and were then copied into learn.css under --doc-*
+   names holding the identical hex values, because the Learn page loads only
+   learn.css and the style.css rules matched nothing there. One copy, two names,
+   and any palette change had to be made twice to stay in sync. */
+
+:root {
+    color-scheme: dark;
+    --bg: #1b1917;
+    --bg-alt: #232019;
+    --bg-card: #24211d;
+    --text: #ece7db;
+    --text-soft: #b0a996;
+    --text-faint: #7c7566;
+    --border: #3a352c;
+    --accent: #e08a5c;
+    --accent-hover: #f0a374;
+    --accent-bg: #3c2c22;
+    --code-bg: #14120f;
+}
+
+:root[data-theme="light"] {
+    color-scheme: light;
+    --bg: #f5f4ee;
+    --bg-alt: #eeecdf;
+    --bg-card: #ffffff;
+    --text: #26231d;
+    --text-soft: #6b6558;
+    --text-faint: #96907f;
+    --border: #e3e0d3;
+    --accent: #c1633e;
+    --accent-hover: #a84f30;
+    --accent-bg: #f3e2d8;
+    --code-bg: #262220;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+
+/* Buttons -----------------------------------------------------------------
+
+   One shape for every clickable pill on the site, in four weights:
+
+     .btn-primary   the page's main action — Ask, Upload, Run query
+     .btn-soft      an action beside a result — Copy, Download CSV, Re-run
+     .btn-quiet     a link that goes somewhere else — Use my own CSV, Send feedback
+     .btn-chip      an example query that runs here — same outline, card fill
+
+   Eleven near-identical rules used to say this: .search-form button,
+   .upload-form button, .sql-editor-actions button, .toolbar-btn, .copy-btn,
+   .view-btn, .chip, .source-links a, .footer-action, .docs-try and
+   .docs-jumplinks a. They had drifted to four different corner radii and five
+   different paddings for the same job, so a "button" was a slightly different
+   control on every page. */
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.86rem;
+    font-weight: 600;
+    line-height: 1.2;
+    text-decoration: none;
+    /* Explicit, not inherited: a <button> with no background of its own falls
+       back to the browser's grey ButtonFace, while an <a> comes out clear —
+       the same variant would then look like two different controls. */
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    padding: 8px 18px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s, opacity 0.15s, transform 0.15s;
+}
+
+.btn-lg {
+    font-size: 0.95rem;
+    padding: 12px 28px;
+}
+
+.btn-sm {
+    font-size: 0.8rem;
+    padding: 5px 14px;
+}
+
+.btn-primary {
+    color: #fff;
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+.btn-primary:hover {
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
+    transform: translateY(-1px);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+}
+
+.btn-soft {
+    color: var(--accent);
+    background: var(--accent-bg);
+}
+
+.btn-soft:hover {
+    color: var(--accent-hover);
+    opacity: 0.8;
+}
+
+.btn-quiet,
+.btn-chip {
+    font-weight: 500;
+    color: var(--text-soft);
+    border-color: var(--border);
+}
+
+.btn-quiet:hover,
+.btn-chip:hover {
+    color: var(--text);
+    background: var(--accent-bg);
+    border-color: var(--accent);
+}
+
+/* A chip runs its query on this page; a .btn-quiet link leaves it. Same family,
+   and the fill is the only thing that separates them. */
+.btn-chip {
+    background: var(--bg-card);
+}
+
+/* The browser's own "Choose file" button. It's a .btn-soft in every way except
+   that it's a pseudo-element, so it can't be given the class. */
+input[type="file"]::file-selector-button {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: var(--accent);
+    background: var(--accent-bg);
+    border: 1px solid transparent;
+    border-radius: 999px;
+    padding: 8px 18px;
+    margin-right: 14px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+}
+
+input[type="file"]::file-selector-button:hover {
+    opacity: 0.8;
+}
+
+/* The selected half of a toggle, e.g. Table / Chart. */
+.btn.is-active {
+    color: #fff;
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+/* Copy Query, for the moment after it worked. */
+.btn.is-done {
+    color: #8fd694;
+    background: rgba(143, 214, 148, 0.25);
+    border-color: rgba(143, 214, 148, 0.5);
+}
+
+/* Both navigation bars — the app's and the Learn page's — use this.
+   The Learn page had its own .docs-back saying the same thing at a
+   different radius. */
+.topbar-link {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.86rem;
+    font-weight: 500;
+    color: var(--text);
+    text-decoration: none;
+    background: none;
+    border: none;
+    border-radius: 8px;
+    /* A real hit area, so these are comfortable to click rather than
+       pixel-hunted, and the hover has something to fill. */
+    padding: 6px 10px;
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s;
+}
+
+.topbar-link:hover {
+    color: var(--accent-hover);
+    background: var(--accent-bg);
+}
+
+.theme-toggle {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text-soft);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    transition: border-color 0.15s, color 0.15s, background 0.2s;
+}
+
+.theme-toggle:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+
+/* Footer ------------------------------------------------------------------ */
+
+.page-footer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 14px;
+    max-width: 940px;
+    margin: 56px auto 0;
+    padding: 22px 18px 28px;
+    border-top: 1px solid var(--border);
+}
+
+/* A reference, not an action — so no pill. */
+.footer-link {
+    font-size: 0.84rem;
+    color: var(--text-soft);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.footer-link:hover {
+    color: var(--accent-hover);
+    border-bottom-color: var(--accent-bg);
+}

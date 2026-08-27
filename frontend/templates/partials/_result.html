@@ -1,0 +1,75 @@
+{#- The answer to a question: what the engine understood, then either one big
+    number, a table of rows, or "nothing matched" — and the SQL underneath.
+
+    index.html, dataset.html and connect_table.html each carried their own copy
+    of these fifty lines. They had already drifted: only two of the three used
+    label_map, and all three hardcoded "SQLite" on the SQL box even when the
+    query had been written for PostgreSQL.
+
+    export_url  where Download CSV points
+    row_noun    "record" on the demo database, "row" on someone's own data -#}
+{% set labels = result.label_map or {} %}
+{% set noun = row_noun|default('row', true) %}
+
+<div class="explanation">
+    <div class="explanation-head">
+        <span class="explanation-label">Task understood</span>
+        <span class="engine-badge engine-{{ result.engine }}">{{ 'AI' if result.engine == 'ai' else 'Rule-based' }}</span>
+    </div>
+    <p>{{ result.explanation }}</p>
+</div>
+
+{% if result.is_aggregate and result.rows %}
+    {# The column the engine chose, not a hardcoded name: an aggregate here can
+       be a count, a sum, or an average. #}
+    {% set stat = result.rows[0] %}
+    {% set stat_key = result.columns[0] %}
+    <div class="stat-card">
+        <span class="stat-value">
+            {% if stat[stat_key] is none %}0{% else %}{{ stat[stat_key]|commas }}{% endif %}
+        </span>
+        <span class="stat-label">{{ stat_key }}</span>
+    </div>
+{% elif result.rows %}
+    <div class="result-toolbar">
+        <p class="result-count">{{ result.rows|length }} {{ noun }}{{ 's' if result.rows|length != 1 else '' }} found</p>
+        <a class="btn btn-soft btn-sm" href="{{ export_url }}">Download CSV</a>
+    </div>
+    <div class="table-wrap">
+        <table class="results-table">
+            <thead>
+                <tr>
+                    {% for col in result.columns %}
+                    <th>{{ labels.get(col, col.replace('_', ' ')) }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in result.rows %}
+                <tr>
+                    {% for col in result.columns %}
+                    <td>{{ row[col]|commas }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% include 'partials/_chart.html' %}
+{% else %}
+    <div class="no-results">
+        <p class="no-results-title">No matching {{ noun }}s</p>
+        <p>The query ran successfully but nothing matched. Try different wording.</p>
+    </div>
+{% endif %}
+
+<div class="sql-box">
+    <div class="sql-box-header">
+        <h4>Generated SQL Query</h4>
+        <div class="sql-box-actions">
+            <span class="sql-box-tag">{{ result.dialect }}</span>
+            <button type="button" class="btn btn-soft btn-sm" onclick="copySql(this)">Copy Query</button>
+        </div>
+    </div>
+    <pre><code>{{ result.sql_display|safe }}</code></pre>
+</div>

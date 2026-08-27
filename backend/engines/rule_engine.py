@@ -141,13 +141,42 @@ def _without_recognised_phrases(text):
 _COMPILED_UNSUPPORTED = tuple((re.compile(p), label) for p, label in UNSUPPORTED_PATTERNS)
 
 
-def unsupported_constraints(text):
+@cache
+def _name_pattern(name):
+    """Matches `name` only as a whole run of characters.
+
+    A plain str.replace() would find "IT" inside "without" and leave "w hout"
+    behind, which stopped a negation from being recognised. Short names are
+    dropped entirely: "IT" and "HR" can't be hiding a digit or a ranking word,
+    and matching them at all is what the same guard in find_match() exists for.
+    """
+    if len(name) <= 3:
+        return _NEVER_MATCHES
+    return re.compile(r"(?<!\w)" + re.escape(name) + r"(?!\w)")
+
+
+# A pattern with nothing to match, so short names strip nothing.
+_NEVER_MATCHES = re.compile(r"(?!)")
+
+
+def unsupported_constraints(text, known_names=()):
     """Names of the constraints in `text` that no template can express.
 
     Empty means the rule engine can answer honestly; anything else means it would
     be guessing.
+
+    `known_names` are values the database actually holds — product names, customer
+    names, departments, categories, cities. A value is not a constraint, and some of
+    them contain the very things these patterns look for: "orders for Laptop Pro 15"
+    was refused as asking for "a specific number" because of the 15 in the product's
+    name, and "27-inch Monitor" fails the same way. The filter on such a name is a
+    plain equality the templates express happily, so the names come out of the
+    residue before it's inspected.
     """
     residue = _without_recognised_phrases(text)
+    # Longest first, so a name contained in another is not half-removed.
+    for name in sorted(known_names, key=len, reverse=True):
+        residue = _name_pattern(name.lower()).sub(" ", residue)
     found = []
     for pattern, label in _COMPILED_UNSUPPORTED:
         if pattern.search(residue) and label not in found:
@@ -228,6 +257,11 @@ def get_reference_data(conn):
     for row in conn.execute(_REFERENCE_SQL).fetchall():
         grouped[row[0]].append(row[1])
     return grouped
+
+
+def reference_names(ref):
+    """Every value get_reference_data() found, flattened — see unsupported_constraints."""
+    return [value for values in ref.values() for value in values]
 
 
 def detect_domain(text):
@@ -538,11 +572,14 @@ def interpret(user_input, conn):
     # Refuse before building. Every builder ends in a catch-all "list everything"
     # branch, so without this the answer to an unsupported question is a full table
     # dump wearing an explanation that describes a question nobody asked.
-    if unsupported_constraints(text):
+    #
+    # The reference data is fetched first so the check can tell a constraint apart
+    # from a value that merely looks like one.
+    ref = get_reference_data(conn)
+    if unsupported_constraints(text, reference_names(ref)):
         return None
 
     aggregate = detect_aggregate(text)
-    ref = get_reference_data(conn)
     sql, params, explanation = DOMAIN_BUILDERS[domain](text, aggregate, ref)
     return {
         "domain": domain,

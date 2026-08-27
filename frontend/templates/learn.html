@@ -1,152 +1,87 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SQL Guide — Query Assistant</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/learn.css') }}">
-</head>
-<body>
-    <header class="docs-topbar">
-        <div class="docs-topbar-inner">
-            <a class="docs-brand" href="/"><span class="dot"></span> Query Assistant</a>
-            <div class="docs-topbar-actions">
-                <a class="docs-back" href="/sql">SQL Editor</a>
-                {% if current_user.is_authenticated %}
-                <a class="docs-back" href="/history">History</a>
-                {% else %}
-                <a class="docs-back" href="/login">Log in</a>
-                <a class="docs-back" href="/register">Sign up</a>
-                {% endif %}
-                <a class="docs-back" href="/">Back to Assistant</a>
-                <button type="button" class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark mode">
-                    <span class="theme-toggle-icon" id="theme-toggle-icon">&#9789;</span>
-                </button>
-            </div>
+{% extends 'partials/_layout.html' %}
+{% set page_title = "SQL Guide" %}
+{% set page_css = 'css/learn.css' %}
+
+{#- Its own shell: a wide documentation page with no .frame or .container,
+    and a topbar of its own rather than the app's. -#}
+{% block body %}
+<header class="docs-topbar">
+    <div class="docs-topbar-inner">
+        <a class="docs-brand" href="/"><span class="dot"></span> Query Assistant</a>
+        <div class="docs-topbar-actions">
+            <a class="topbar-link" href="/sql">SQL Editor</a>
+            {% if current_user.is_authenticated %}
+            <a class="topbar-link" href="/history">History</a>
+            {% else %}
+            <a class="topbar-link" href="/login">Log in</a>
+            <a class="topbar-link" href="/register">Sign up</a>
+            {% endif %}
+            <a class="topbar-link" href="/">Back to Assistant</a>
+            <button type="button" class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark mode">
+                <span class="theme-toggle-icon" id="theme-toggle-icon">&#9789;</span>
+            </button>
         </div>
-    </header>
+    </div>
+</header>
 
-    <script>
-        (function() {
-            if (localStorage.getItem('theme') === 'light') {
-                document.documentElement.setAttribute('data-theme', 'light');
-            }
-        })();
 
-        function updateThemeIcon() {
-            var icon = document.getElementById('theme-toggle-icon');
-            if (!icon) return;
-            var isLight = document.documentElement.getAttribute('data-theme') === 'light';
-            icon.innerHTML = isLight ? '&#9789;' : '&#9788;';
-        }
+<main class="docs-main">
+    <div class="docs-hero">
+        <h1>SQL Guide</h1>
+        <p>From your first SELECT to multi-table joins — every example here runs against this company's real database. Click "Try this query" to see it live.</p>
+        <div class="docs-jumplinks">
+            {% for slug, label in [('basic', 'Basic'), ('intermediate', 'Intermediate'),
+                                  ('advanced', 'Advanced'), ('faq', 'FAQ')] %}
+            <a class="btn btn-chip btn-sm" href="#{{ slug }}">{{ label }}</a>
+            {% endfor %}
+        </div>
+    </div>
 
-        function toggleTheme() {
-            var root = document.documentElement;
-            if (root.getAttribute('data-theme') === 'light') {
-                root.removeAttribute('data-theme');
-                localStorage.setItem('theme', 'dark');
-            } else {
-                root.setAttribute('data-theme', 'light');
-                localStorage.setItem('theme', 'light');
-            }
-            updateThemeIcon();
-        }
+    {%- set sections = [
+        ('basic', 'Basic', 'Getting started',
+         "The four building blocks behind almost every query you'll write."),
+        ('intermediate', 'Intermediate', 'Summarizing data',
+         'Turning rows into answers — counts, totals, groups and pattern search.'),
+        ('advanced', 'Advanced', 'Multi-table queries',
+         'Combining tables and working with dates — where SQL starts doing real work.'),
+    ] %}
+    {% for slug, level, heading, blurb in sections %}
+    <section id="{{ slug }}" class="docs-section">
+        <div class="docs-section-head">
+            <span class="docs-level-tag level-{{ slug }}">{{ level }}</span>
+            <h2>{{ heading }}</h2>
+        </div>
+        <p class="docs-section-desc">{{ blurb }}</p>
 
-        updateThemeIcon();
-    </script>
-
-    <main class="docs-main">
-        <div class="docs-hero">
-            <h1>SQL Guide</h1>
-            <p>From your first SELECT to multi-table joins — every example here runs against this company's real database. Click "Try this query" to see it live.</p>
-            <div class="docs-jumplinks">
-                <a href="#basic">Basic</a>
-                <a href="#intermediate">Intermediate</a>
-                <a href="#advanced">Advanced</a>
-                <a href="#faq">FAQ</a>
+        {% for c in grouped[level] %}
+        <article class="docs-card">
+            <div class="docs-card-text">
+                <h3>{{ c.title }}</h3>
+                <p>{{ c.explanation }}</p>
+                <a class="btn btn-soft" href="/?q={{ c.try_query|urlencode }}">Try this query</a>
             </div>
+            <div class="docs-card-code">
+                <pre class="docs-code"><code>{{ c.sql|highlight|safe }}</code></pre>
+            </div>
+        </article>
+        {% endfor %}
+    </section>
+    {% endfor %}
+
+    <section id="faq" class="docs-section">
+        <div class="docs-section-head">
+            <h2>Frequently Asked Questions</h2>
         </div>
 
-        <section id="basic" class="docs-section">
-            <div class="docs-section-head">
-                <span class="docs-level-tag level-basic">Basic</span>
-                <h2>Getting started</h2>
-            </div>
-            <p class="docs-section-desc">The four building blocks behind almost every query you'll write.</p>
-
-            {% for c in grouped['Basic'] %}
-            <article class="docs-card">
-                <div class="docs-card-text">
-                    <h3>{{ c.title }}</h3>
-                    <p>{{ c.explanation }}</p>
-                    <a class="docs-try" href="/?q={{ c.try_query|urlencode }}">Try this query</a>
-                </div>
-                <div class="docs-card-code">
-                    <pre class="docs-code"><code>{{ c.sql|highlight|safe }}</code></pre>
-                </div>
-            </article>
+        <div class="docs-faq">
+            {% for question, answer in faqs %}
+            <details class="docs-faq-item">
+                <summary>{{ question }}</summary>
+                <p>{{ answer }}</p>
+            </details>
             {% endfor %}
-        </section>
-
-        <section id="intermediate" class="docs-section">
-            <div class="docs-section-head">
-                <span class="docs-level-tag level-intermediate">Intermediate</span>
-                <h2>Summarizing data</h2>
-            </div>
-            <p class="docs-section-desc">Turning rows into answers — counts, totals, groups and pattern search.</p>
-
-            {% for c in grouped['Intermediate'] %}
-            <article class="docs-card">
-                <div class="docs-card-text">
-                    <h3>{{ c.title }}</h3>
-                    <p>{{ c.explanation }}</p>
-                    <a class="docs-try" href="/?q={{ c.try_query|urlencode }}">Try this query</a>
-                </div>
-                <div class="docs-card-code">
-                    <pre class="docs-code"><code>{{ c.sql|highlight|safe }}</code></pre>
-                </div>
-            </article>
-            {% endfor %}
-        </section>
-
-        <section id="advanced" class="docs-section">
-            <div class="docs-section-head">
-                <span class="docs-level-tag level-advanced">Advanced</span>
-                <h2>Multi-table queries</h2>
-            </div>
-            <p class="docs-section-desc">Combining tables and working with dates — where SQL starts doing real work.</p>
-
-            {% for c in grouped['Advanced'] %}
-            <article class="docs-card">
-                <div class="docs-card-text">
-                    <h3>{{ c.title }}</h3>
-                    <p>{{ c.explanation }}</p>
-                    <a class="docs-try" href="/?q={{ c.try_query|urlencode }}">Try this query</a>
-                </div>
-                <div class="docs-card-code">
-                    <pre class="docs-code"><code>{{ c.sql|highlight|safe }}</code></pre>
-                </div>
-            </article>
-            {% endfor %}
-        </section>
-
-        <section id="faq" class="docs-section">
-            <div class="docs-section-head">
-                <h2>Frequently Asked Questions</h2>
-            </div>
-
-            <div class="docs-faq">
-                {% for question, answer in faqs %}
-                <details class="docs-faq-item">
-                    <summary>{{ question }}</summary>
-                    <p>{{ answer }}</p>
-                </details>
-                {% endfor %}
-            </div>
-        </section>
-    {% include 'partials/_footer.html' %}
-    </main>
-</body>
-</html>
+        </div>
+    </section>
+{% include 'partials/_footer.html' %}
+</main>
+{% endblock %}
