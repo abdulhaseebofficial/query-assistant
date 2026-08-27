@@ -1,0 +1,17 @@
+{#- The same four <link> tags were pasted into all eleven page templates. Set
+    page_title (and page_css, when the page isn't on style.css) before including.
+
+    JetBrains Mono is loaded here for every page: style.css asks for it in four
+    places but only learn.html ever fetched it, so SQL elsewhere quietly fell
+    back to Consolas. -#}
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ page_title }} &mdash; Query Assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename=page_css|default('css/style.css', true)) }}">
+{#- In <head> rather than at the end of <body>: it reads the saved theme and sets
+    data-theme before the first paint, so a light-theme reader gets no dark flash. #}
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>

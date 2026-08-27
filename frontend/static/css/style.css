@@ -1,37 +1,3 @@
-:root {
-    color-scheme: dark;
-    --bg: #1b1917;
-    --bg-alt: #232019;
-    --bg-card: #24211d;
-    --text: #ece7db;
-    --text-soft: #b0a996;
-    --text-faint: #7c7566;
-    --border: #3a352c;
-    --accent: #e08a5c;
-    --accent-hover: #f0a374;
-    --accent-bg: #3c2c22;
-    --code-bg: #14120f;
-}
-
-:root[data-theme="light"] {
-    color-scheme: light;
-    --bg: #f5f4ee;
-    --bg-alt: #eeecdf;
-    --bg-card: #ffffff;
-    --text: #26231d;
-    --text-soft: #6b6558;
-    --text-faint: #96907f;
-    --border: #e3e0d3;
-    --accent: #c1633e;
-    --accent-hover: #a84f30;
-    --accent-bg: #f3e2d8;
-    --code-bg: #262220;
-}
-
-* {
-    box-sizing: border-box;
-}
-
 @keyframes fadeUp {
     from {
         opacity: 0;
@@ -109,10 +75,6 @@ h1 + .subtitle {
 }
 
 
-
-
-
-
 /* For a link that sits inside a sentence. .nav-link is a pill — background,
    padding, and a top margin that drags it off the baseline — so forcing it inline
    with a style attribute put a button in the middle of running text. */
@@ -177,27 +139,6 @@ h1 + .subtitle {
     box-shadow: 0 0 0 4px var(--accent-bg);
 }
 
-.search-form button {
-    padding: 12px 30px;
-    font-family: 'Inter', sans-serif;
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: #fff;
-    background: var(--accent);
-    border: 1px solid var(--accent);
-    border-radius: 16px;
-    cursor: pointer;
-    transition: background 0.15s, transform 0.15s;
-}
-
-.search-form button:hover {
-    background: var(--accent-hover);
-    transform: translateY(-1px);
-}
-
-.search-form button:active {
-    transform: translateY(0);
-}
 
 .chips {
     display: flex;
@@ -209,23 +150,10 @@ h1 + .subtitle {
 }
 
 
-.chip {
-    display: inline-block;
-    font-size: 0.86rem;
-    font-weight: 500;
-    color: var(--text-soft);
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    padding: 6px 16px;
-    border-radius: 999px;
-    text-decoration: none;
-    transition: background 0.15s, color 0.15s, border-color 0.15s;
-}
-
-.chip:hover {
-    background: var(--accent-bg);
-    color: var(--accent-hover);
-    border-color: var(--accent-bg);
+/* A chips row that closes a section, rather than one sitting under the search
+   box with more of the page still to come. */
+.chips-actions {
+    margin-bottom: 40px;
 }
 
 .schema-guide {
@@ -362,21 +290,6 @@ h1 + .subtitle {
     margin-bottom: 18px;
 }
 
-.toolbar-btn {
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--accent);
-    text-decoration: none;
-    background: var(--accent-bg);
-    border-radius: 999px;
-    padding: 6px 16px;
-    transition: opacity 0.15s, color 0.15s;
-}
-
-.toolbar-btn:hover {
-    opacity: 0.8;
-    color: var(--accent-hover);
-}
 
 .table-wrap {
     overflow-x: auto;
@@ -438,6 +351,10 @@ h1 + .subtitle {
 
 /* The follow-up advice under a "couldn't answer" message: which key to set, and
    which questions do work without one. Quieter than the reason above it. */
+.no-results-error {
+    margin-bottom: 28px;
+}
+
 .no-results-hint {
     font-size: 0.92rem;
     margin: 14px 0 0;
@@ -450,12 +367,6 @@ h1 + .subtitle {
     border-radius: 6px;
     padding: 1px 6px;
     font-size: 0.88em;
-}
-
-.chip-sm {
-    font-size: 0.8rem;
-    padding: 4px 12px;
-    margin: 4px 3px 0;
 }
 
 
@@ -496,28 +407,6 @@ h1 + .subtitle {
     border-radius: 999px;
 }
 
-.copy-btn {
-    font-family: 'Inter', sans-serif;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--accent);
-    background: rgba(193, 99, 62, 0.15);
-    border: 1px solid rgba(193, 99, 62, 0.4);
-    border-radius: 999px;
-    padding: 4px 14px;
-    cursor: pointer;
-    transition: background 0.15s;
-}
-
-.copy-btn:hover {
-    background: rgba(193, 99, 62, 0.28);
-}
-
-.copy-btn.copied {
-    background: rgba(143, 214, 148, 0.25);
-    border-color: rgba(143, 214, 148, 0.5);
-    color: #8fd694;
-}
 
 .sql-box pre {
     margin: 0;
@@ -679,40 +568,9 @@ h1 + .subtitle {
     padding: 8px 0;
 }
 
-.upload-field input[type="file"]::file-selector-button {
-    font-family: 'Inter', sans-serif;
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--accent);
-    background: var(--accent-bg);
-    border: none;
-    border-radius: 999px;
-    padding: 8px 18px;
-    margin-right: 14px;
-    cursor: pointer;
-    transition: opacity 0.15s;
-}
 
-.upload-field input[type="file"]::file-selector-button:hover {
-    opacity: 0.8;
-}
-
-.upload-form button {
+.upload-form .btn {
     align-self: flex-start;
-    padding: 12px 28px;
-    font-family: 'Inter', sans-serif;
-    font-size: 0.92rem;
-    font-weight: 600;
-    color: #fff;
-    background: var(--accent);
-    border: 1px solid var(--accent);
-    border-radius: 999px;
-    cursor: pointer;
-    transition: background 0.15s;
-}
-
-.upload-form button:hover {
-    background: var(--accent-hover);
 }
 
 .upload-notes {
@@ -724,6 +582,10 @@ h1 + .subtitle {
     font-size: 0.85rem;
     color: var(--text-faint);
     margin: 0;
+}
+
+.upload-notes p + p {
+    margin-top: 16px;
 }
 
 
@@ -796,26 +658,6 @@ h1 + .subtitle {
     flex-wrap: wrap;
 }
 
-.topbar-link {
-    font-family: 'Inter', sans-serif;
-    font-size: 0.86rem;
-    font-weight: 500;
-    color: var(--text);
-    text-decoration: none;
-    background: none;
-    border: none;
-    border-radius: 8px;
-    /* A real hit area, so these are comfortable to click rather than
-       pixel-hunted, and the hover has something to fill. */
-    padding: 6px 10px;
-    cursor: pointer;
-    transition: color 0.15s, background 0.15s;
-}
-
-.topbar-link:hover {
-    color: var(--accent-hover);
-    background: var(--accent-bg);
-}
 
 .topbar-form {
     display: inline;
@@ -827,26 +669,6 @@ h1 + .subtitle {
     color: var(--text-faint);
 }
 
-.theme-toggle {
-    width: 32px;
-    height: 32px;
-    flex-shrink: 0;
-    border-radius: 50%;
-    border: 1px solid var(--border);
-    background: var(--bg);
-    color: var(--text-soft);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.95rem;
-    transition: border-color 0.15s, color 0.15s, background 0.2s;
-}
-
-.theme-toggle:hover {
-    border-color: var(--accent);
-    color: var(--accent);
-}
 
 /* Engine badge */
 
@@ -884,24 +706,6 @@ h1 + .subtitle {
     margin-bottom: 14px;
 }
 
-.view-btn {
-    font-family: 'Inter', sans-serif;
-    font-size: 0.82rem;
-    font-weight: 600;
-    color: var(--text-soft);
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    padding: 6px 18px;
-    cursor: pointer;
-    transition: background 0.15s, color 0.15s, border-color 0.15s;
-}
-
-.view-btn.active {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: #fff;
-}
 
 .chart-card {
     background: var(--bg-card);
@@ -977,7 +781,6 @@ h1 + .subtitle {
 
 body,
 .frame,
-.bg-card,
 .results-table,
 .sql-box,
 .chart-card {
@@ -985,8 +788,8 @@ body,
 }
 
 
-/* The other data sources, kept as quiet links rather than three filled buttons
-   competing with the search box for attention. */
+/* The other data sources, kept as .btn-quiet links rather than three filled
+   buttons competing with the search box for attention. */
 .source-links {
     display: flex;
     justify-content: center;
@@ -994,31 +797,6 @@ body,
     gap: 12px;
     margin-bottom: 34px;
 }
-
-/* These sit directly under the example chips and must not read as more of them:
-   a chip runs a query in place, these go somewhere else. Hence the unfilled
-   background — same family, different job. */
-.source-links a {
-    display: inline-flex;
-    align-items: center;
-    font-size: 0.86rem;
-    font-weight: 500;
-    color: var(--text-soft);
-    text-decoration: none;
-    background: transparent;
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    padding: 8px 18px;
-    transition: color 0.15s, border-color 0.15s, background 0.15s;
-}
-
-
-.source-links a:hover {
-    color: var(--text);
-    border-color: var(--accent);
-    background: var(--accent-bg);
-}
-
 
 
 /* The SQL editor: a place to type a query rather than a question. */
@@ -1077,78 +855,12 @@ body,
     margin-top: 12px;
 }
 
-.sql-editor-actions button {
-    padding: 11px 28px;
-    font-family: 'Inter', sans-serif;
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: #fff;
-    background: var(--accent);
-    border: 1px solid var(--accent);
-    border-radius: 14px;
-    cursor: pointer;
-    transition: background 0.15s, transform 0.15s;
-}
-
-.sql-editor-actions button:hover {
-    background: var(--accent-hover);
-    transform: translateY(-1px);
-}
 
 .sql-editor-note {
     font-size: 0.84rem;
     color: var(--text-faint);
 }
 
-
-/* Sits under every page. Quiet as a block, but the links inside still have to
-   read as links: text-faint is the colour for de-emphasised *labels*, and using it
-   here made "Send feedback" look like something already greyed out. */
-.page-footer {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 14px;
-    max-width: 900px;
-    margin: 56px auto 0;
-    padding: 22px 18px 10px;
-    border-top: 1px solid var(--border);
-}
-
-/* Sending feedback is an action, so it gets the shape of one — the same outlined
-   pill the data-source links use, at a smaller size. */
-.footer-action {
-    font-size: 0.84rem;
-    font-weight: 500;
-    color: var(--text-soft);
-    text-decoration: none;
-    background: transparent;
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    padding: 7px 16px;
-    transition: color 0.15s, border-color 0.15s, background 0.15s;
-}
-
-.footer-action:hover {
-    color: var(--text);
-    border-color: var(--accent);
-    background: var(--accent-bg);
-}
-
-/* A reference, not an action. */
-.footer-link {
-    font-size: 0.84rem;
-    color: var(--text-soft);
-    text-decoration: none;
-    border-bottom: 1px solid transparent;
-    transition: color 0.15s, border-color 0.15s;
-}
-
-.footer-link:hover {
-    color: var(--accent-hover);
-    border-bottom-color: var(--accent-bg);
-}
 
 .label-optional {
     font-weight: 400;

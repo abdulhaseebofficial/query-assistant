@@ -1,51 +1,34 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign Up — Query Assistant</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body>
-    {% include 'partials/_nav.html' %}
-    <div class="frame">
-        <div class="container container-narrow">
-            <header>
-                <h1>Sign up</h1>
-                <p class="subtitle">To save your query history.</p>
-            </header>
+{% extends 'partials/_layout.html' %}
+{% set page_title = "Sign Up" %}
+{% set container_class = "container-narrow" %}
 
-            {% if error %}
-            <div class="no-results" style="margin-bottom: 24px;">
-                <p class="no-results-title">Couldn't create your account</p>
-                <p>{{ error }}</p>
-            </div>
-            {% endif %}
+{% block content %}
+<header>
+    <h1>Sign up</h1>
+    <p class="subtitle">To save your query history.</p>
+</header>
 
-            <form action="/register" method="POST" class="upload-form">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <label class="upload-field">
-                    <span class="upload-label">Username</span>
-                    <input type="text" name="username" pattern="[a-zA-Z0-9_]{3,30}" title="3-30 characters: letters, numbers, underscores" required autofocus>
-                </label>
-                <label class="upload-field">
-                    <span class="upload-label">Email</span>
-                    <input type="email" name="email" required>
-                </label>
-                <label class="upload-field">
-                    <span class="upload-label">Password</span>
-                    <input type="password" name="password" minlength="6" required>
-                </label>
-                <button type="submit">Create Account</button>
-            </form>
+{% set error_title = "Couldn't create your account" %}
+{% include 'partials/_error.html' %}
 
-            <div class="upload-notes">
-                <p>Already have an account? <a class="inline-link" href="/login">Log in</a></p>
-            </div>
-        </div>
-        {% include 'partials/_footer.html' %}
-    </div>
-</body>
-</html>
+<form action="/register" method="POST" class="upload-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label class="upload-field">
+        <span class="upload-label">Username</span>
+        <input type="text" name="username" pattern="[a-zA-Z0-9_]{3,30}" title="3-30 characters: letters, numbers, underscores" required autofocus>
+    </label>
+    <label class="upload-field">
+        <span class="upload-label">Email</span>
+        <input type="email" name="email" required>
+    </label>
+    <label class="upload-field">
+        <span class="upload-label">Password</span>
+        <input type="password" name="password" minlength="6" required>
+    </label>
+    <button type="submit" class="btn btn-primary btn-lg">Create Account</button>
+</form>
+
+<div class="upload-notes">
+    <p>Already have an account? <a class="inline-link" href="/login">Log in</a></p>
+</div>
+{% endblock %}

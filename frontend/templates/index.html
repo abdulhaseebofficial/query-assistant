@@ -1,256 +1,168 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Query Assistant — Company Database</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body>
-    {% include 'partials/_nav.html' %}
-    <div class="frame">
-        <div class="container">
-            <header>
-                <h1 id="greeting"
-                    data-phrases='{{ greeting_by_hour|tojson }}'
-                    data-name="{{ greeting_name or '' }}">{{ greeting }}</h1>
-            </header>
-            <script>
-                /* The server rendered the greeting from its own clock, which is not
-                   the reader's — a deployment sits in UTC while the reader does not.
-                   Re-pick it from the browser's hour, using the phrases the server
-                   sent so the wording is never written twice. */
-                (function () {
-                    var el = document.getElementById('greeting');
-                    if (!el) return;
-                    try {
-                        var phrases = JSON.parse(el.dataset.phrases);
-                        var phrase = phrases[new Date().getHours()];
-                        var name = el.dataset.name;
-                        el.textContent = (name && phrase.slice(-1) !== '?')
-                            ? phrase + ', ' + name
-                            : phrase;
-                    } catch (e) {
-                        /* Leave the server's greeting in place. */
-                    }
-                })();
-            </script>
+{% extends 'partials/_layout.html' %}
+{% set page_title = "Company Database" %}
 
-            <form action="/" method="GET" class="search-form">
-                <input
-                    type="text"
-                    name="q"
-                    placeholder="e.g. employees in the IT department"
-                    value="{{ query }}"
-                    autofocus
-                >
-                <button type="submit">Ask</button>
-            </form>
-
-            <div class="chips">
-                {% for example in examples %}
-                <a class="chip" href="/?q={{ example|urlencode }}">{{ example }}</a>
-                {% endfor %}
-            </div>
-
-            <div class="source-links">
-                <a href="/upload">Use my own CSV</a>
-                <a href="/connect-db">Connect a database</a>
-            </div>
-
-            <details class="schema-guide">
-                <summary>Database Schema Reference</summary>
-                <div class="schema-tables">
-                    <div class="schema-table">
-                        <h5>employees</h5>
-                        <ul>
-                            <li>id</li>
-                            <li>name</li>
-                            <li>department_id &rarr; departments.id</li>
-                            <li>position</li>
-                            <li>salary</li>
-                            <li>email</li>
-                            <li>hire_date</li>
-                        </ul>
-                    </div>
-                    <div class="schema-table">
-                        <h5>departments</h5>
-                        <ul>
-                            <li>id</li>
-                            <li>name</li>
-                            <li>location</li>
-                            <li>manager_name</li>
-                        </ul>
-                    </div>
-                    <div class="schema-table">
-                        <h5>products</h5>
-                        <ul>
-                            <li>id</li>
-                            <li>name</li>
-                            <li>category</li>
-                            <li>price</li>
-                            <li>stock_quantity</li>
-                        </ul>
-                    </div>
-                    <div class="schema-table">
-                        <h5>customers</h5>
-                        <ul>
-                            <li>id</li>
-                            <li>name</li>
-                            <li>email</li>
-                            <li>city</li>
-                            <li>phone</li>
-                        </ul>
-                    </div>
-                    <div class="schema-table">
-                        <h5>orders</h5>
-                        <ul>
-                            <li>id</li>
-                            <li>customer_id &rarr; customers.id</li>
-                            <li>product_id &rarr; products.id</li>
-                            <li>quantity</li>
-                            <li>order_date</li>
-                            <li>total_amount</li>
-                            <li>status</li>
-                        </ul>
-                    </div>
-                </div>
-            </details>
-
-            {% if searched %}
-                {% if result.understood %}
-                    <div class="explanation">
-                        <div class="explanation-head">
-                            <span class="explanation-label">Task understood</span>
-                            <span class="engine-badge engine-{{ result.engine }}">{{ 'AI' if result.engine == 'ai' else 'Rule-based' }}</span>
-                        </div>
-                        <p>{{ result.explanation }}</p>
-                    </div>
-
-                    {% if result.is_aggregate and result.rows %}
-                        {% set stat = result.rows[0] %}
-                        {% set stat_key = result.columns[0] %}
-                        <div class="stat-card">
-                            <span class="stat-value">
-                                {% if stat[stat_key] is none %}0{% else %}{{ stat[stat_key]|commas }}{% endif %}
-                            </span>
-                            <span class="stat-label">{{ stat_key }}</span>
-                        </div>
-                    {% elif result.rows %}
-                        <div class="result-toolbar">
-                            <p class="result-count">{{ result.rows|length }} record{{ 's' if result.rows|length != 1 else '' }} found</p>
-                            <a class="toolbar-btn" href="/export?q={{ query|urlencode }}">Download CSV</a>
-                        </div>
-                        <div class="table-wrap">
-                            <table class="results-table">
-                                <thead>
-                                    <tr>
-                                        {% for col in result.columns %}
-                                        <th>{{ col.replace('_', ' ') }}</th>
-                                        {% endfor %}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for row in result.rows %}
-                                    <tr>
-                                        {% for col in result.columns %}
-                                        <td>{{ row[col]|commas }}</td>
-                                        {% endfor %}
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                        {% include 'partials/_chart.html' %}
-                    {% else %}
-                        <div class="no-results">
-                            <p class="no-results-title">No matching records</p>
-                            <p>The query ran successfully but nothing matched. Try different wording.</p>
-                        </div>
-                    {% endif %}
-
-                    <div class="sql-box">
-                        <div class="sql-box-header">
-                            <h4>Generated SQL Query</h4>
-                            <div class="sql-box-actions">
-                                <span class="sql-box-tag">SQLite</span>
-                                <button type="button" class="copy-btn" onclick="copySql(this)">Copy Query</button>
-                            </div>
-                        </div>
-                        <pre><code>{{ result.sql_display|safe }}</code></pre>
-                    </div>
-                {% else %}
-                    <div class="no-results">
-                    {% if result.wants_overview %}
-                        <p class="no-results-title">Which part of it?</p>
-                        <p>
-                            There's no single answer to "everything" — the company data lives in
-                            five separate tables. Pick one to start with:
-                        </p>
-                        <p class="no-results-hint">
-                            <a class="chip chip-sm" href="/?q=all+employees">employees</a>
-                            <a class="chip chip-sm" href="/?q=all+departments">departments</a>
-                            <a class="chip chip-sm" href="/?q=all+products">products</a>
-                            <a class="chip chip-sm" href="/?q=all+customers">customers</a>
-                            <a class="chip chip-sm" href="/?q=all+orders">orders</a>
-                        </p>
-
-                    {% elif not result.on_topic %}
-                        <p class="no-results-title">That's not something this database can answer</p>
-                        <p>It holds company data — try asking about <em>employees</em>, <em>departments</em>, <em>products</em>, <em>customers</em>, or <em>orders</em>.</p>
-
-                    {% elif result.ai_available %}
-                        <p class="no-results-title">{{ result.provider }} couldn't turn that into a valid query</p>
-                        <p>
-                            It understood the topic but didn't produce SQL that runs against this schema.
-                            Try rephrasing it, or naming the columns you want.
-                        </p>
-
-                    {% else %}
-                        <p class="no-results-title">That question needs AI turned on</p>
-                        <p>
-                            {% if result.constraints %}
-                                It asks for {{ result.constraints | join(' and ') }}, which the
-                                built-in keyword engine has no way to express — so rather than
-                                answer a different question, it stopped.
-                            {% else %}
-                                The built-in keyword engine only recognises a fixed set of phrasings.
-                            {% endif %}
-                        </p>
-                        <p class="no-results-hint">
-                            Set <code>GEMINI_API_KEY</code> (or <code>ANTHROPIC_API_KEY</code>) — in
-                            <code>.env</code> when running locally, or as an environment variable on your
-                            host — then restart. Questions like this one are answered properly after that.
-                        </p>
-                        <p class="no-results-hint">
-                            Without a key, it can still handle things like:
-                            {% for ex in examples[:4] %}<a class="chip chip-sm" href="/?q={{ ex|urlencode }}">{{ ex }}</a>{% endfor %}
-                        </p>
-                    {% endif %}
-                    </div>
-                {% endif %}
-            {% endif %}
-
-        </div>
-        {% include 'partials/_footer.html' %}
-    </div>
-
-    <script>
-        function copySql(btn) {
-            const codeEl = document.querySelector('.sql-box code');
-            if (!codeEl) return;
-            navigator.clipboard.writeText(codeEl.innerText).then(() => {
-                const original = btn.textContent;
-                btn.textContent = 'Copied';
-                btn.classList.add('copied');
-                setTimeout(() => {
-                    btn.textContent = original;
-                    btn.classList.remove('copied');
-                }, 1500);
-            });
+{% block content %}
+<header>
+    <h1 id="greeting"
+        data-phrases='{{ greeting_by_hour|tojson }}'
+        data-name="{{ greeting_name or '' }}">{{ greeting }}</h1>
+</header>
+<script>
+    /* The server rendered the greeting from its own clock, which is not
+       the reader's — a deployment sits in UTC while the reader does not.
+       Re-pick it from the browser's hour, using the phrases the server
+       sent so the wording is never written twice. */
+    (function () {
+        var el = document.getElementById('greeting');
+        if (!el) return;
+        try {
+            var phrases = JSON.parse(el.dataset.phrases);
+            var phrase = phrases[new Date().getHours()];
+            var name = el.dataset.name;
+            el.textContent = (name && phrase.slice(-1) !== '?')
+                ? phrase + ', ' + name
+                : phrase;
+        } catch (e) {
+            /* Leave the server's greeting in place. */
         }
-    </script>
-</body>
-</html>
+    })();
+</script>
+
+<form action="/" method="GET" class="search-form">
+    <input
+        type="text"
+        name="q"
+        placeholder="e.g. employees in the IT department"
+        value="{{ query }}"
+        autofocus
+    >
+    <button type="submit" class="btn btn-primary btn-lg">Ask</button>
+</form>
+
+<div class="chips">
+    {% for example in examples %}
+    <a class="btn btn-chip" href="/?q={{ example|urlencode }}">{{ example }}</a>
+    {% endfor %}
+</div>
+
+<div class="source-links">
+    <a class="btn btn-quiet" href="/upload">Use my own CSV</a>
+    <a class="btn btn-quiet" href="/connect-db">Connect a database</a>
+</div>
+
+<details class="schema-guide">
+    <summary>Database Schema Reference</summary>
+    <div class="schema-tables">
+        <div class="schema-table">
+            <h5>employees</h5>
+            <ul>
+                <li>id</li>
+                <li>name</li>
+                <li>department_id &rarr; departments.id</li>
+                <li>position</li>
+                <li>salary</li>
+                <li>email</li>
+                <li>hire_date</li>
+            </ul>
+        </div>
+        <div class="schema-table">
+            <h5>departments</h5>
+            <ul>
+                <li>id</li>
+                <li>name</li>
+                <li>location</li>
+                <li>manager_name</li>
+            </ul>
+        </div>
+        <div class="schema-table">
+            <h5>products</h5>
+            <ul>
+                <li>id</li>
+                <li>name</li>
+                <li>category</li>
+                <li>price</li>
+                <li>stock_quantity</li>
+            </ul>
+        </div>
+        <div class="schema-table">
+            <h5>customers</h5>
+            <ul>
+                <li>id</li>
+                <li>name</li>
+                <li>email</li>
+                <li>city</li>
+                <li>phone</li>
+            </ul>
+        </div>
+        <div class="schema-table">
+            <h5>orders</h5>
+            <ul>
+                <li>id</li>
+                <li>customer_id &rarr; customers.id</li>
+                <li>product_id &rarr; products.id</li>
+                <li>quantity</li>
+                <li>order_date</li>
+                <li>total_amount</li>
+                <li>status</li>
+            </ul>
+        </div>
+    </div>
+</details>
+
+{% if searched %}
+    {% if result.understood %}
+        {% set export_url = "/export?q=" ~ query|urlencode %}
+        {% set row_noun = "record" %}
+        {% include 'partials/_result.html' %}
+    {% else %}
+        <div class="no-results">
+        {% if result.wants_overview %}
+            <p class="no-results-title">Which part of it?</p>
+            <p>
+                There's no single answer to "everything" — the company data lives in
+                five separate tables. Pick one to start with:
+            </p>
+            <p class="no-results-hint">
+                <a class="btn btn-chip btn-sm" href="/?q=all+employees">employees</a>
+                <a class="btn btn-chip btn-sm" href="/?q=all+departments">departments</a>
+                <a class="btn btn-chip btn-sm" href="/?q=all+products">products</a>
+                <a class="btn btn-chip btn-sm" href="/?q=all+customers">customers</a>
+                <a class="btn btn-chip btn-sm" href="/?q=all+orders">orders</a>
+            </p>
+
+        {% elif not result.on_topic %}
+            <p class="no-results-title">That's not something this database can answer</p>
+            <p>It holds company data — try asking about <em>employees</em>, <em>departments</em>, <em>products</em>, <em>customers</em>, or <em>orders</em>.</p>
+
+        {% elif result.ai_available %}
+            <p class="no-results-title">{{ result.provider }} couldn't turn that into a valid query</p>
+            <p>
+                It understood the topic but didn't produce SQL that runs against this schema.
+                Try rephrasing it, or naming the columns you want.
+            </p>
+
+        {% else %}
+            <p class="no-results-title">That question needs AI turned on</p>
+            <p>
+                {% if result.constraints %}
+                    It asks for {{ result.constraints | join(' and ') }}, which the
+                    built-in keyword engine has no way to express — so rather than
+                    answer a different question, it stopped.
+                {% else %}
+                    The built-in keyword engine only recognises a fixed set of phrasings.
+                {% endif %}
+            </p>
+            <p class="no-results-hint">
+                Set <code>GEMINI_API_KEY</code> (or <code>ANTHROPIC_API_KEY</code>) — in
+                <code>.env</code> when running locally, or as an environment variable on your
+                host — then restart. Questions like this one are answered properly after that.
+            </p>
+            <p class="no-results-hint">
+                Without a key, it can still handle things like:
+                {% for ex in examples[:4] %}<a class="btn btn-chip btn-sm" href="/?q={{ ex|urlencode }}">{{ ex }}</a>{% endfor %}
+            </p>
+        {% endif %}
+        </div>
+    {% endif %}
+{% endif %}
+{% endblock %}

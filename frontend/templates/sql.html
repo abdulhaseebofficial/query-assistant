@@ -1,100 +1,85 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SQL Editor — Query Assistant</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body>
-    {% include 'partials/_nav.html' %}
-    <div class="frame">
-        <div class="container">
-            <header>
-                <h1>Write your own SQL</h1>
-            </header>
+{% extends 'partials/_layout.html' %}
+{% set page_title = "SQL Editor" %}
 
-            <form action="/sql" method="POST" class="sql-editor">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+{% block content %}
+<header>
+    <h1>Write your own SQL</h1>
+</header>
 
-                <div class="sql-editor-bar">
-                    <label for="source">Run against</label>
-                    <select id="source" name="source">
-                        {% for option in sources %}
-                        <option value="{{ option.key }}" {{ 'selected' if option.key == source.key }}>
-                            {{ option.label }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                </div>
+<form action="/sql" method="POST" class="sql-editor">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-                <textarea
-                    name="sql"
-                    class="sql-input"
-                    rows="7"
-                    spellcheck="false"
-                    placeholder="SELECT name, salary FROM employees ORDER BY salary DESC LIMIT 5"
-                >{{ sql }}</textarea>
-
-                <div class="sql-editor-actions">
-                    <button type="submit">Run query</button>
-                    <span class="sql-editor-note">Read-only. One SELECT at a time.</span>
-                </div>
-            </form>
-
-            <details class="schema-guide">
-                <summary>Tables in {{ source.label }}</summary>
-                <div class="schema-tables">
-                    {% for name, columns in source.tables.items() %}
-                    <div class="schema-table">
-                        <h5>{{ name }}</h5>
-                        <ul>
-                            {% for column in columns %}<li>{{ column }}</li>{% endfor %}
-                        </ul>
-                    </div>
-                    {% endfor %}
-                </div>
-            </details>
-
-            {% if result %}
-                {% if result.error %}
-                    <div class="no-results">
-                        <p class="no-results-title">That query didn't run</p>
-                        <p>{{ result.error }}</p>
-                    </div>
-                {% elif result.rows %}
-                    <div class="result-toolbar">
-                        <p class="result-count">{{ result.rows|length }} row{{ 's' if result.rows|length != 1 else '' }} returned</p>
-                    </div>
-                    <div class="table-wrap">
-                        <table class="results-table">
-                            <thead>
-                                <tr>
-                                    {% for col in result.columns %}<th>{{ col.replace('_', ' ') }}</th>{% endfor %}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for row in result.rows %}
-                                <tr>
-                                    {% for col in result.columns %}<td>{{ row[col]|commas }}</td>{% endfor %}
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    {% include 'partials/_chart.html' %}
-                {% else %}
-                    <div class="no-results">
-                        <p class="no-results-title">No rows</p>
-                        <p>The query ran without error and matched nothing.</p>
-                    </div>
-                {% endif %}
-            {% endif %}
-
-        </div>
-        {% include 'partials/_footer.html' %}
+    <div class="sql-editor-bar">
+        <label for="source">Run against</label>
+        <select id="source" name="source">
+            {% for option in sources %}
+            <option value="{{ option.key }}" {{ 'selected' if option.key == source.key }}>
+                {{ option.label }}
+            </option>
+            {% endfor %}
+        </select>
     </div>
-</body>
-</html>
+
+    <textarea
+        name="sql"
+        class="sql-input"
+        rows="7"
+        spellcheck="false"
+        placeholder="SELECT name, salary FROM employees ORDER BY salary DESC LIMIT 5"
+    >{{ sql }}</textarea>
+
+    <div class="sql-editor-actions">
+        <button type="submit" class="btn btn-primary btn-lg">Run query</button>
+        <span class="sql-editor-note">Read-only. One SELECT at a time.</span>
+    </div>
+</form>
+
+<details class="schema-guide">
+    <summary>Tables in {{ source.label }}</summary>
+    <div class="schema-tables">
+        {% for name, columns in source.tables.items() %}
+        <div class="schema-table">
+            <h5>{{ name }}</h5>
+            <ul>
+                {% for column in columns %}<li>{{ column }}</li>{% endfor %}
+            </ul>
+        </div>
+        {% endfor %}
+    </div>
+</details>
+
+{% if result %}
+    {% if result.error %}
+        <div class="no-results">
+            <p class="no-results-title">That query didn't run</p>
+            <p>{{ result.error }}</p>
+        </div>
+    {% elif result.rows %}
+        <div class="result-toolbar">
+            <p class="result-count">{{ result.rows|length }} row{{ 's' if result.rows|length != 1 else '' }} returned</p>
+        </div>
+        <div class="table-wrap">
+            <table class="results-table">
+                <thead>
+                    <tr>
+                        {% for col in result.columns %}<th>{{ col.replace('_', ' ') }}</th>{% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in result.rows %}
+                    <tr>
+                        {% for col in result.columns %}<td>{{ row[col]|commas }}</td>{% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% include 'partials/_chart.html' %}
+    {% else %}
+        <div class="no-results">
+            <p class="no-results-title">No rows</p>
+            <p>The query ran without error and matched nothing.</p>
+        </div>
+    {% endif %}
+{% endif %}
+{% endblock %}

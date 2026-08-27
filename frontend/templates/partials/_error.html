@@ -1,0 +1,8 @@
+{#- The "that didn't work" box. Five templates each wrote out their own copy,
+    with a different inline margin on every one. Set error_title first. -#}
+{% if error %}
+<div class="no-results no-results-error">
+    <p class="no-results-title">{{ error_title|default("Something went wrong", true) }}</p>
+    <p>{{ error }}</p>
+</div>
+{% endif %}
