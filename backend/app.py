@@ -136,10 +136,19 @@ def describe_failure(user_input):
     "couldn't tell what you're asking for" is what made the app feel broken.
     """
     text = user_input.strip().lower()
+    # The same reference data interpret() checks against, so the reason given here
+    # is the reason it actually refused — a product named "Laptop Pro 15" must not
+    # be reported back as the question asking for "a specific number".
+    conn = get_connection()
+    try:
+        known_names = rule_engine.reference_names(rule_engine.get_reference_data(conn))
+    finally:
+        conn.close()
+
     return {
         "on_topic": rule_engine.detect_domain(text) is not None,
         "wants_overview": rule_engine.wants_overview(text),
-        "constraints": rule_engine.unsupported_constraints(text),
+        "constraints": rule_engine.unsupported_constraints(text, known_names),
         "ai_available": ai_engine.is_available(),
         "provider": ai_engine.active_provider_name(),
     }
