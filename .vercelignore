@@ -2,6 +2,11 @@
 # size limit, but there's no reason to ship screenshots and test fixtures either.
 docs/
 tests/
+.pytest_cache/
+.ruff_cache/
+.*-tests/
+.*-pytest/
+__pycache__/
 .github/
 data/
 instance/
