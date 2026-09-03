@@ -4,6 +4,10 @@ __pycache__/
 *.egg-info/
 .venv/
 venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
 
 # Environment
 .env
@@ -12,6 +16,11 @@ venv/
 data/*.db
 data/uploads/*
 !data/uploads/.gitkeep
+instance/*
+!instance/.gitignore
+!instance/uploads/
+instance/uploads/*
+!instance/uploads/.gitkeep
 
 # Editors / OS
 tempCodeRunnerFile.*

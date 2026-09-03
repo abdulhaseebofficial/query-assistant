@@ -1,0 +1,6 @@
+# Runtime state belongs here locally; keep only directory placeholders.
+*
+!.gitignore
+!uploads/
+uploads/*
+!uploads/.gitkeep

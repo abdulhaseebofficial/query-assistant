@@ -1,0 +1,191 @@
+sql-project/
+|-- .github/
+|   |-- ISSUE_TEMPLATE/
+|   |   |-- bug_report.yml
+|   |   |-- config.yml
+|   |   `-- feature_request.yml
+|   |-- workflows/
+|   |   `-- ci.yml
+|   |-- dependabot.yml
+|   `-- PULL_REQUEST_TEMPLATE.md
+|-- api/
+|   `-- index.py
+|-- data/
+|   `-- uploads/
+|-- docs/
+|   |-- architecture/
+|   |   |-- dependency_rules.md
+|   |   |-- PROJECT_STRUCTURE.md
+|   |   `-- PROJECT_STRUCTURE.txt
+|   `-- screenshots/
+|       |-- connect-db.png
+|       |-- feedback.png
+|       |-- home.png
+|       |-- learn.png
+|       |-- query-result-light.png
+|       |-- query-result.png
+|       `-- sql-editor.png
+|-- instance/
+|   |-- uploads/
+|   |   `-- .gitkeep
+|   `-- .gitignore
+|-- scripts/
+|   |-- check_architecture.py
+|   |-- generate_structure.py
+|   `-- verify_deployment.py
+|-- src/
+|   `-- query_assistant/
+|       |-- content/
+|       |   |-- __init__.py
+|       |   `-- learning.py
+|       |-- domain/
+|       |   |-- query/
+|       |   |   |-- __init__.py
+|       |   |   |-- csv_engine.py
+|       |   |   |-- phrases.py
+|       |   |   `-- rule_engine.py
+|       |   |-- validation/
+|       |   |   |-- __init__.py
+|       |   |   `-- sql_guardrails.py
+|       |   `-- __init__.py
+|       |-- infrastructure/
+|       |   |-- ai/
+|       |   |   |-- __init__.py
+|       |   |   `-- providers.py
+|       |   |-- database/
+|       |   |   |-- connectors/
+|       |   |   |   |-- __init__.py
+|       |   |   |   |-- postgresql.py
+|       |   |   |   `-- sqlite.py
+|       |   |   |-- __init__.py
+|       |   |   |-- connection.py
+|       |   |   `-- initialization.py
+|       |   `-- __init__.py
+|       |-- repositories/
+|       |   |-- __init__.py
+|       |   |-- feedback_repository.py
+|       |   `-- user_repository.py
+|       |-- services/
+|       |   |-- __init__.py
+|       |   |-- auth_service.py
+|       |   |-- dataset_service.py
+|       |   |-- feedback_service.py
+|       |   |-- greeting_service.py
+|       |   |-- query_service.py
+|       |   `-- sql_console_service.py
+|       |-- utilities/
+|       |   |-- __init__.py
+|       |   |-- charts.py
+|       |   `-- csv_export.py
+|       |-- web/
+|       |   |-- blueprints/
+|       |   |   |-- auth/
+|       |   |   |   |-- __init__.py
+|       |   |   |   `-- routes.py
+|       |   |   |-- datasets/
+|       |   |   |   |-- __init__.py
+|       |   |   |   `-- routes.py
+|       |   |   |-- feedback/
+|       |   |   |   |-- __init__.py
+|       |   |   |   `-- routes.py
+|       |   |   |-- learning/
+|       |   |   |   |-- __init__.py
+|       |   |   |   `-- routes.py
+|       |   |   |-- main/
+|       |   |   |   |-- __init__.py
+|       |   |   |   `-- routes.py
+|       |   |   |-- sql_console/
+|       |   |   |   |-- __init__.py
+|       |   |   |   `-- routes.py
+|       |   |   `-- __init__.py
+|       |   |-- static/
+|       |   |   |-- css/
+|       |   |   |   |-- base.css
+|       |   |   |   |-- learn.css
+|       |   |   |   `-- style.css
+|       |   |   `-- js/
+|       |   |       `-- app.js
+|       |   |-- templates/
+|       |   |   |-- auth/
+|       |   |   |   |-- history.html
+|       |   |   |   |-- login.html
+|       |   |   |   `-- register.html
+|       |   |   |-- datasets/
+|       |   |   |   |-- connect.html
+|       |   |   |   |-- connect_table.html
+|       |   |   |   |-- dataset.html
+|       |   |   |   `-- upload.html
+|       |   |   |-- feedback/
+|       |   |   |   |-- form.html
+|       |   |   |   `-- list.html
+|       |   |   |-- learning/
+|       |   |   |   `-- index.html
+|       |   |   |-- main/
+|       |   |   |   `-- index.html
+|       |   |   |-- partials/
+|       |   |   |   |-- _chart.html
+|       |   |   |   |-- _error.html
+|       |   |   |   |-- _footer.html
+|       |   |   |   |-- _head.html
+|       |   |   |   |-- _layout.html
+|       |   |   |   |-- _nav.html
+|       |   |   |   `-- _result.html
+|       |   |   `-- sql_console/
+|       |   |       `-- index.html
+|       |   |-- __init__.py
+|       |   |-- error_handlers.py
+|       |   |-- presentation.py
+|       |   `-- security.py
+|       |-- __init__.py
+|       |-- app.py
+|       |-- config.py
+|       |-- exceptions.py
+|       `-- extensions.py
+|-- tests/
+|   |-- deployment/
+|   |   |-- test_application_factory.py
+|   |   |-- test_architecture.py
+|   |   |-- test_documentation.py
+|   |   `-- test_vercel.py
+|   |-- end_to_end/
+|   |   `-- test_user_journeys.py
+|   |-- integration/
+|   |   |-- database/
+|   |   |   |-- test_connected_database.py
+|   |   |   |-- test_postgres_dialect.py
+|   |   |   `-- test_query_efficiency.py
+|   |   |-- providers/
+|   |   |   `-- test_ai_providers.py
+|   |   `-- routes/
+|   |       |-- test_app.py
+|   |       |-- test_feedback.py
+|   |       `-- test_honest_answers.py
+|   |-- security/
+|   |   |-- test_sql_console.py
+|   |   |-- test_sql_guardrails.py
+|   |   `-- test_web_security.py
+|   |-- unit/
+|   |   |-- domain/
+|   |   |   |-- test_csv_engine.py
+|   |   |   |-- test_csv_questions.py
+|   |   |   |-- test_greeting.py
+|   |   |   |-- test_roman_urdu.py
+|   |   |   `-- test_rule_engine.py
+|   |   `-- utilities/
+|   |       `-- test_charts.py
+|   |-- conftest.py
+|   `-- README.md
+|-- .env.example
+|-- .gitattributes
+|-- .gitignore
+|-- .vercelignore
+|-- CODE_OF_CONDUCT.md
+|-- CONTRIBUTING.md
+|-- LICENSE
+|-- pyproject.toml
+|-- README.md
+|-- requirements-dev.txt
+|-- requirements.txt
+|-- run.py
+|-- SECURITY.md
+`-- vercel.json

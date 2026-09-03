@@ -33,6 +33,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt -r requirements-dev.txt
+          pip install --no-deps -e .
 
       - name: Run the test suite
         run: pytest
@@ -52,7 +53,11 @@ jobs:
         run: pip install ruff
 
       - name: Check formatting and lint rules
-        run: ruff check .
+        run: |
+          ruff check .
+          python scripts/check_architecture.py
+          python scripts/generate_structure.py --check
+          python -m compileall -q src tests api run.py
 
   smoke:
     name: App starts and serves traffic
@@ -66,7 +71,9 @@ jobs:
           cache: pip
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          pip install -r requirements.txt
+          pip install --no-deps -e .
 
       - name: Boot the app and hit it over HTTP
         env:
@@ -84,3 +91,6 @@ jobs:
           curl -fsS "http://127.0.0.1:5000/?q=employees+in+the+IT+department" | grep -q "SELECT"
           echo "Generated SQL rendered on the page."
           kill $APP_PID
+
+      - name: Verify factory and Vercel entry point
+        run: python scripts/verify_deployment.py

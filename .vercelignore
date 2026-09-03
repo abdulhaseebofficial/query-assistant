@@ -4,6 +4,7 @@ docs/
 tests/
 .github/
 data/
+instance/
 *.md
 !README.md
 .gitattributes

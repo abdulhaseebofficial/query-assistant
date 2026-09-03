@@ -8,8 +8,16 @@ license = { file = "LICENSE" }
 authors = [{ name = "Abdul Haseeb" }]
 keywords = ["sql", "flask", "natural-language", "text-to-sql", "sqlite", "postgresql", "claude"]
 
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["src"]
 addopts = "-q"
 
 [tool.ruff]
@@ -26,4 +34,4 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 # learn_content.py is prose, not code: its long lines are sentences shown to
 # the user on the Learn SQL page, and wrapping them would only add noise.
-"backend/content/learn_content.py" = ["E501"]
+"src/query_assistant/content/learning.py" = ["E501"]
