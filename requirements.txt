@@ -6,4 +6,4 @@ google-genai>=1.0.0
 python-dotenv>=1.0.1
 flask-login>=0.6.3
 flask-wtf>=1.2.1
-flask-limiter>=3.8.0
+flask-limiter>=4.1.1
