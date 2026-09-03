@@ -1,8 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/api/index" }
-  ],
   "env": {
     "DATA_DIR": "/tmp/query-assistant"
   }

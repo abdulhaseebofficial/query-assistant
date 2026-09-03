@@ -181,6 +181,7 @@ sql-project/
 |-- .vercelignore
 |-- CODE_OF_CONDUCT.md
 |-- CONTRIBUTING.md
+|-- index.py
 |-- LICENSE
 |-- pyproject.toml
 |-- README.md

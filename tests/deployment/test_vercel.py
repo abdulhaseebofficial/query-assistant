@@ -22,10 +22,10 @@ def vercel_config():
 
 
 class TestVercelConfig:
-    def test_every_path_is_routed_to_the_one_function(self, vercel_config):
-        """Without this rewrite Vercel finds no framework and serves 404 everywhere."""
-        rewrites = vercel_config["rewrites"]
-        assert any(r["source"] == "/(.*)" and r["destination"] == "/api/index" for r in rewrites)
+    def test_framework_entry_point_exists_at_the_project_root(self, vercel_config):
+        """Modern Vercel discovers root index.py and preserves Flask request paths."""
+        assert (PROJECT_ROOT / "index.py").is_file()
+        assert "rewrites" not in vercel_config
 
     def test_the_data_directory_is_moved_somewhere_writable(self, vercel_config):
         """The deployment directory is read-only; only /tmp can be written."""

@@ -40,7 +40,11 @@ sql-project/
 
 ## Startup flow
 
-`run.py` and `api/index.py` both import `query_assistant.create_app`. The factory loads `Config`, resolves writable paths, initializes LoginManager, CSRFProtect, and Limiter, registers Blueprints and error/security handlers, installs template filters, initializes the application database, and returns the WSGI app.
+`run.py` and `api/index.py` both import `query_assistant.create_app`; root `index.py`
+exports the same WSGI object for Vercel's Flask framework discovery without a
+path-rewriting rule. The factory loads `Config`, resolves writable paths, initializes
+LoginManager, CSRFProtect, and Limiter, registers Blueprints and error/security handlers,
+installs template filters, initializes the application database, and returns the app.
 
 ## Feature ownership
 
